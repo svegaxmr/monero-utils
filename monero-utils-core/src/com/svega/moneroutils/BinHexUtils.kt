@@ -7,19 +7,9 @@ class BinHexUtils {
                 throw MoneroException("Hex string has invalid length!")
             if(hex.isEmpty())
                 return Array(0, {UInt8(0)})
-            println(hex)
-            for(b in hex.toByteArray())
-                print(" ${b.toInt()}")
-            println()
             val res = Array(hex.length / 2, {_ -> UInt8(0)})
             for (i in 0 until hex.length / 2) {
-                println("${hex.substring(i * 2, i * 2 + 2).length}: ${hex.substring(i * 2, i * 2 + 2)}")
-                try {
-                    res[i] = Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16).toUInt8()
-                }catch (_: NumberFormatException){
-                    res[i] = UInt8(0)
-                }
-
+                res[i] = Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16).toUInt8()
             }
             return res
         }
