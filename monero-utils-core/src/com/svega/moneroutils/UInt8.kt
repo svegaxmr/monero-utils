@@ -1,33 +1,55 @@
 package com.svega.moneroutils
 
-class UInt8 : Number, Comparable<UInt8>{
-    constructor()
-    constructor(new: Char){value = new}
-    constructor(new: Int){value = new.toChar()}
-    private var value = 0.toChar()
+import java.math.BigInteger
+
+data class UInt8(private var value: Int) : Number(), Comparable<UInt8>{
+    init{
+        value = value and 0xFF
+    }
     override fun toByte() = value.toByte()
-    override fun toChar() = value
-    override fun toInt() = value.toInt()
+    override fun toChar() = value.toChar()
+    override fun toInt() = value
     override fun toLong() = value.toLong()
     override fun toDouble() = value.toDouble()
     override fun toFloat() = value.toFloat()
     override fun toShort() = value.toShort()
+    fun toBigInteger() = BigInteger(value.toString())
+
+    operator fun inc() = UInt8(value + 1)
+    operator fun dec() = UInt8(value - 1)
+
     override fun compareTo(other: UInt8) = value.compareTo(other.value)
     override fun toString() = toInt().toString()
     fun set(new: Int){
-        value = (new and 0xFF).toChar()
+        print("Setting as $new which turns into ")
+        value = new and 0xF
+        println("$value")
     }
     fun set(new: Char) = set(new.toInt())
     fun get() = value
+    override fun equals(other: Any?): Boolean {
+        if(other == null)
+            return false
+        if(other !is UInt8)
+            return false
+        return value == other.value
+    }
 }
 
-fun Byte.toUInt8() = UInt8(this.toChar())
-fun Char.toUInt8() = UInt8(this)
-fun Int.toUInt8() = UInt8(this.toChar())
-fun Long.toUInt8() = UInt8(this.toChar())
-fun Double.toUInt8() = UInt8(this.toChar())
-fun Float.toUInt8() = UInt8(this.toChar())
-fun Short.toUInt8() = UInt8(this.toChar())
+infix fun UInt8.or(other: UInt8) = toInt().or(other.toInt()).toUInt8()
+infix fun UInt8.and(other: UInt8) = toInt().and(other.toInt()).toUInt8()
+
+fun ByteArray.toUInt8Array(): Array<UInt8>{
+    return Array(this.size, {x -> this[x].toUInt8()})
+}
+
+fun Byte.toUInt8() = UInt8(this.toInt())
+fun Char.toUInt8() = UInt8(this.toInt())
+fun Int.toUInt8() = UInt8(this)
+fun Long.toUInt8() = UInt8(this.toInt())
+fun Double.toUInt8() = UInt8(this.toInt())
+fun Float.toUInt8() = UInt8(this.toInt())
+fun Short.toUInt8() = UInt8(this.toInt())
 
 fun Array<UInt8>.asString() : String{
     val sb = StringBuilder()
@@ -35,4 +57,8 @@ fun Array<UInt8>.asString() : String{
         sb.append(b.toChar())
     }
     return sb.toString()
+}
+
+fun Array<UInt8>.asByteArray(): ByteArray {
+    return ByteArray(this.size, {x -> this[x].toByte()})
 }

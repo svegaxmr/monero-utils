@@ -1,5 +1,8 @@
 package com.svega.moneroutils
 
+import com.svega.moneroutils.BinHexUtils.Companion.binaryToString
+import com.svega.moneroutils.BinHexUtils.Companion.hexToBinary
+import com.svega.moneroutils.BinHexUtils.Companion.stringToBinary
 import java.lang.Integer.parseInt
 import java.math.BigInteger
 
@@ -12,46 +15,6 @@ class Base58 {
         private val alphabetSize = alphabet.size
         private val fullBlockSize = 8
         private val fullEncodedBlockSize = 11
-
-        private fun hexToBinary(hex: String): Array<UInt8>{
-            if (hex.length % 2 != 0)
-                throw MoneroException("Hex string has invalid length!")
-            val res = Array(hex.length / 2, {_ -> UInt8(0)})
-            for (i in 0 until hex.length / 2) {
-                res[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16).toUInt8()
-            }
-            return res
-        }
-
-        private fun binaryToHex(bin: Array<UInt8>) : String{
-            val out = StringBuilder()
-            for (b in bin) {
-                out.append(String.format("%02X", b.toByte()))
-            }
-            return out.toString()
-        }
-
-        private fun stringToBinary(str: String) : Array<UInt8>{
-            val bytes = str.toByteArray()
-            val ret = Array(bytes.size, {_ -> UInt8(0)})
-            for(i in 0 until bytes.size){
-                ret[i] = bytes[i].toUInt8()
-            }
-            return ret
-        }
-
-        @Throws(MoneroException::class)
-        fun binaryToString(bin: Array<UInt8>) : String {
-            val cr = CharArray(bin.size)
-
-            for(i in 0 until bin.size){
-                cr[i] = bin[i].toChar()
-                if(cr[i].toInt() >= 128)
-                    cr[i] = (cr[i].toInt() and 0x00FF).toChar()
-            }
-
-            return String(cr)
-        }
 
         private fun uint8BufToUInt64(data: Array<UInt8>) : BigInteger{
             if (data.isEmpty() || data.size > 8) {
