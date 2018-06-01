@@ -72,7 +72,6 @@ class BinHexUtils {
             return ret
         }
 
-        @Throws(MoneroException::class)
         fun binaryToString(bin: Array<UInt8>) : String {
             val cr = CharArray(bin.size)
 
