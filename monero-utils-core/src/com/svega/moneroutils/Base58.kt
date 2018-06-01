@@ -152,7 +152,3 @@ class Base58 {
         }
     }
 }
-
-fun main(args: Array<String>){
-    println(Base58.decode("42nVRFB5asjL1kFEsd69U1XjVr6q5ykcN4rLMTLkYsZ9GpgRt6bLGyDYdztsrF6PWYTrFy1RWY8Tm2gn3GwavPLZ5pGqex5")[0])
-}
