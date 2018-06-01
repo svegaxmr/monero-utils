@@ -2,10 +2,11 @@ package com.svega.moneroutils.addresses
 
 import com.svega.moneroutils.NetType
 
-class MainAddress(address: String, net: NetType): MoneroAddress(address, net) {
+class SubAddress(address: String, netType: NetType) : MoneroAddress(address, netType) {
     override val LENGTH = 95
     override val BYTES = 69
     init{
+        println("Have subaddress $address on net $net")
         validate()
     }
 }
