@@ -3,7 +3,7 @@ package com.svega.moneroutils.addresses
 import com.svega.moneroutils.*
 import com.svega.moneroutils.crypto.Keccak
 
-class IntegratedAddress : MoneroAddress {
+open class IntegratedAddress : MoneroAddress {
     override val LENGTH = 106
     override val BYTES = 77
     private var paymentID = ""
