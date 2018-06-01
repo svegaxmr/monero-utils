@@ -1,215 +1,269 @@
 package com.svega.moneroutils.crypto
 
+import com.svega.moneroutils.*
 import java.math.BigInteger
+import java.lang.System.arraycopy
+import java.io.ByteArrayOutputStream
 
-val DEFAULT_KECCAK_PERMUTATION_WIDTH = 1600
+import java.lang.Math.min
+import java.lang.System.arraycopy
+import java.nio.charset.Charset
+import java.util.Arrays.fill
 
 class Keccak{
 
     companion object {
-        private var w: Int = 0
-        private var n: Int = 0
-
-        init {
-            w = DEFAULT_KECCAK_PERMUTATION_WIDTH / 25
-            val l = (Math.log(w.toDouble()) / Math.log(2.0)).toInt()
-            n = 12 + 2 * l
-        }
-
-        /**
-         * max unsigned long
-         */
         private val BIT_64 = BigInteger("18446744073709551615")
 
-        fun getReverseHex(input: ByteArray) = input.reversed().toHexString("")
-
         /**
-         * round constants
+         * Do hash.
+         *
+         * @param message input data
+         * @param parameter keccak param
+         * @return byte-array result
          */
-        private val RC = arrayOf(BigInteger("0000000000000001", 16), BigInteger("0000000000008082", 16), BigInteger("800000000000808A", 16), BigInteger("8000000080008000", 16), BigInteger("000000000000808B", 16), BigInteger("0000000080000001", 16), BigInteger("8000000080008081", 16), BigInteger("8000000000008009", 16), BigInteger("000000000000008A", 16), BigInteger("0000000000000088", 16), BigInteger("0000000080008009", 16), BigInteger("000000008000000A", 16), BigInteger("000000008000808B", 16), BigInteger("800000000000008B", 16), BigInteger("8000000000008089", 16), BigInteger("8000000000008003", 16), BigInteger("8000000000008002", 16), BigInteger("8000000000000080", 16), BigInteger("000000000000800A", 16), BigInteger("800000008000000A", 16), BigInteger("8000000080008081", 16), BigInteger("8000000000008080", 16), BigInteger("0000000080000001", 16), BigInteger("8000000080008008", 16))
+        fun getHash(message: ByteArray, parameter: Parameter): ByteArray {
+            val uState = IntArray(200)
+            val uMessage = convertToUint(message)
 
-        // The rotation offsets r[x,y].
-        private val r = arrayOf(intArrayOf(0, 36, 3, 41, 18), intArrayOf(1, 44, 10, 45, 2), intArrayOf(62, 6, 43, 15, 61), intArrayOf(28, 55, 25, 21, 56), intArrayOf(27, 20, 39, 8, 14))
 
-        fun getHash(message: String, parameter: Parameter)
-                = getHash(message.toByteArray(), parameter)
-
-        fun getHash(byteArray: ByteArray, parameter: Parameter): String {
-            val message = byteArray.toHexString("")
-            // Initialization and padding
-            val S = Array(5) { Array(5) { BigInteger.ZERO } }
-
-            val P = padding(message, parameter)
+            val rateInBytes = parameter.r / 8
+            var blockSize = 0
+            var inputOffset = 0
 
             // Absorbing phase
-            for (Pi in P) {
-                for (i in 0 until 5) {
-                    (0 until 5).filter { i + it * 5 < parameter.r / w }
-                            .forEach { S[i][it] = S[i][it] xor Pi[i + it * 5] }
+            while (inputOffset < uMessage.size) {
+                blockSize = min(uMessage.size - inputOffset, rateInBytes)
+                for (i in 0 until blockSize) {
+                    uState[i] = uState[i] xor uMessage[i + inputOffset]
                 }
 
-                doKeccackf(S)
+                if (blockSize == rateInBytes) {
+                    doKeccakf(uState)
+                    blockSize = 0
+                }
+
+                inputOffset = inputOffset + blockSize
             }
+
+            // Padding phase
+            uState[blockSize] = uState[blockSize] xor parameter.d
+            if (parameter.d and 0x80 !== 0 && blockSize == rateInBytes - 1) {
+                doKeccakf(uState)
+            }
+
+            uState[rateInBytes - 1] = uState[rateInBytes - 1] xor 0x80
+            doKeccakf(uState)
 
             // Squeezing phase
-            var Z = ""
-
-            do {
-                for (x in 0..parameter.r / w) {
-                    Z += getReverseHex(S[x % 5][x / 5].toByteArray()).fillWithZero(16).substring(0, 16)
+            val byteResults = ByteArrayOutputStream()
+            var tOutputLen = parameter.outputLengthInBytes
+            while (tOutputLen > 0) {
+                blockSize = min(tOutputLen, rateInBytes)
+                for (i in 0 until blockSize) {
+                    byteResults.write(uState[i].toByte().toInt())
                 }
-                doKeccackf(S)
-            } while (Z.length < parameter.outputLengthInBytes * 2)
 
-            return Z.substring(0, parameter.outputLengthInBytes * 2)
+                tOutputLen -= blockSize
+                if (tOutputLen > 0) {
+                    doKeccakf(uState)
+                }
+            }
+
+            return byteResults.toByteArray()
         }
 
-        private fun doKeccackf(A: Array<Array<BigInteger>>): Array<Array<BigInteger>> {
-            var NEWA = A
-            for (i in 0 until n) {
-                NEWA = roundB(NEWA, RC[i])
-            }
+        private fun doKeccakf(uState: IntArray) {
+            val lState = Array<Array<BigInteger>>(5) { Array(5, {BigInteger.ZERO}) }
 
-            return NEWA
-        }
-
-        private fun roundB(A: Array<Array<BigInteger>>, RC: BigInteger): Array<Array<BigInteger>> {
-            val C = createArrayOfFiveZEROs()
-            val D = createArrayOfFiveZEROs()
-            val B = Array<Array<BigInteger>>(5) { createArrayOfFiveZEROs() }
-
-            //θ step
-            for (i in 0 until 5) {
-                C[i] = A[i][0] xor A[i][1] xor A[i][2] xor A[i][3]xor A[i][4]
-            }
-
-            for (i in 0 until 5) {
-                D[i] = C[(i + 4) % 5] xor rot(C[(i + 1) % 5], 1)
-            }
-
-            for (i in 0 until 5) {
-                for (j in 0 until 5) {
-                    A[i][j] = A[i][j] xor D[i]
-                }
-            }
-
-            //ρ and π steps
-            for (i in 0 until 5) {
-                for (j in 0 until 5) {
-                    B[j][(2 * i + 3 * j) % 5] = rot(A[i][j], r[i][j])
-                }
-            }
-
-            //χ step
             for (i in 0..4) {
                 for (j in 0..4) {
-                    A[i][j] = B[i][j] xor (!B[(i + 1) % 5][j] and B[(i + 2) % 5][j])
+                    val data = IntArray(8)
+                    arraycopy(uState, 8 * (i + 5 * j), data, 0, data.size)
+                    lState[i][j] = convertFromLittleEndianTo64(data)
+                }
+            }
+            roundB(lState)
+
+            fill(uState, 0)
+            for (i in 0..4) {
+                for (j in 0..4) {
+                    val data = convertFrom64ToLittleEndian(lState[i][j])
+                    arraycopy(data, 0, uState, 8 * (i + 5 * j), data.size)
                 }
             }
 
-            //ι step
-            A[0][0] = A[0][0] xor RC
-
-            return A
         }
 
-        private fun createArrayOfFiveZEROs() = arrayOf(BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO, BigInteger.ZERO)
+        /**
+         * Permutation on the given state.
+         *
+         * @param state state
+         */
+        private fun roundB(state: Array<Array<BigInteger>>) {
+            var LFSRstate = 1
+            for (round in 0..23) {
+                val C = Array(5, {BigInteger.ZERO})
+                val D = Array(5, {BigInteger.ZERO})
 
-        private fun rot(x: BigInteger, n_in: Int): BigInteger {
-            val n = n_in % w
-
-            val leftShift = getShiftLeft64(x, n)
-            val rightShift = x shr w - n
-
-            return leftShift or rightShift
-        }
-
-        private fun getShiftLeft64(value: BigInteger, shift: Int): BigInteger {
-            var retValue = value shl shift
-            var tmpValue = value shl shift
-
-            if (retValue > BIT_64) {
-                for (i in 64 until 64 + shift) {
-                    tmpValue = tmpValue.clearBit(i)
+                // θ step
+                for (i in 0..4) {
+                    C[i] = state[i][0].xor(state[i][1]).xor(state[i][2]).xor(state[i][3]).xor(state[i][4])
                 }
 
-                tmpValue = tmpValue.setBit(64 + shift)
-                retValue = tmpValue and retValue
-            }
-
-            return retValue
-        }
-
-        private fun padding(inputMessage: String, parameter: Parameter): Array<Array<BigInteger>> {
-            var message = inputMessage
-            val size: Int
-            message += parameter.d
-
-            while (message.length / 2 * 8 % parameter.r != parameter.r - 8) {
-                message += "00"
-            }
-
-            message += "80"
-            size = message.length / 2 * 8 / parameter.r
-
-            val arrayM = Array(size) { Array(1600 / w) { BigInteger.ZERO } }
-
-            var count = 0
-            var j = 0
-            var i = 0
-
-            for (_n in 0 until message.length) {
-
-                if (j > parameter.r / w - 1) {
-                    j = 0
-                    i++
+                for (i in 0..4) {
+                    D[i] = C[(i + 4) % 5].xor(leftRotate64(C[(i + 1) % 5], 1))
                 }
 
-                count++
-
-                if (count * 4 % w == 0) {
-                    val subString = message.substring(count - w / 4, w / 4 + (count - w / 4))
-                    arrayM[i][j] = BigInteger(subString, 16)
-                    var revertString = getReverseHex(arrayM[i][j].toByteArray())
-                    revertString = revertString.fillWithZero(subString.length)
-                    arrayM[i][j] = BigInteger(revertString, 16)
-                    j++
+                for (i in 0..4) {
+                    for (j in 0..4) {
+                        state[i][j] = state[i][j].xor(D[i])
+                    }
                 }
 
-            }
+                //ρ and π steps
+                var x = 1
+                var y = 0
+                var current = state[x][y]
+                for (i in 0..23) {
+                    val tX = x
+                    x = y
+                    y = (2 * tX + 3 * y) % 5
 
-            return arrayM
+                    val shiftValue = current
+                    current = state[x][y]
+
+                    state[x][y] = leftRotate64(shiftValue, (i + 1) * (i + 2) / 2)
+                }
+
+                //χ step
+                for (j in 0..4) {
+                    val t = Array<BigInteger>(5, {BigInteger.ZERO})
+                    for (i in 0..4) {
+                        t[i] = state[i][j]
+                    }
+
+                    for (i in 0..4) {
+                        // ~t[(i + 1) % 5]
+                        val invertVal = t[(i + 1) % 5].xor(BIT_64)
+                        // t[i] ^ ((~t[(i + 1) % 5]) & t[(i + 2) % 5])
+                        state[i][j] = t[i].xor(invertVal.and(t[(i + 2) % 5]))
+                    }
+                }
+
+                //ι step
+                for (i in 0..6) {
+                    LFSRstate = (LFSRstate shl 1 xor (LFSRstate shr 7) * 0x71) % 256
+                    // pow(2, i) - 1
+                    val bitPosition = (1 shl i) - 1
+                    if (LFSRstate and 2 != 0) {
+                        state[0][0] = state[0][0].xor(BigInteger("1").shiftLeft(bitPosition))
+                    }
+                }
+            }
         }
 
-        internal fun String.fillWithZero(fillLength: Int)
-                = this + "0".repeat(Math.max(fillLength - this.length, 0))
+        private val ENCODE_BYTE_TABLE = byteArrayOf('0'.toByte(), '1'.toByte(), '2'.toByte(), '3'.toByte(), '4'.toByte(), '5'.toByte(), '6'.toByte(), '7'.toByte(), '8'.toByte(), '9'.toByte(), 'a'.toByte(), 'b'.toByte(), 'c'.toByte(), 'd'.toByte(), 'e'.toByte(), 'f'.toByte())
+
+        /**
+         * Convert byte array to unsigned array.
+         *
+         * @param data byte array
+         * @return unsigned array
+         */
+        fun convertToUint(data: ByteArray): IntArray {
+            val converted = IntArray(data.size)
+            for (i in data.indices) {
+                converted[i] = data[i].toInt() and 0xFF
+            }
+
+            return converted
+        }
+
+        /**
+         * Convert LE to 64-bit value (unsigned long).
+         *
+         * @param data data
+         * @return 64-bit value (unsigned long)
+         */
+        fun convertFromLittleEndianTo64(data: IntArray): BigInteger {
+            var uLong = BigInteger("0")
+            for (i in 0..7) {
+                uLong = uLong.add(BigInteger(Integer.toString(data[i])).shiftLeft(8 * i))
+            }
+
+            return uLong
+        }
+
+        /**
+         * Convert 64-bit (unsigned long) value to LE.
+         *
+         * @param uLong 64-bit value (unsigned long)
+         * @return LE
+         */
+        fun convertFrom64ToLittleEndian(uLong: BigInteger): IntArray {
+            val data = IntArray(8)
+            val mod256 = BigInteger("256")
+            for (i in 0..7) {
+                data[i] = uLong.shiftRight(8 * i).mod(mod256).toInt()
+            }
+
+            return data
+        }
+
+        /**
+         * Bitwise rotate left.
+         *
+         * @param value  unsigned long value
+         * @param rotate rotate left
+         * @return result
+         */
+        fun leftRotate64(value: BigInteger, rotate: Int): BigInteger {
+            val lp = value.shiftRight(64 - rotate % 64)
+            val rp = value.shiftLeft(rotate % 64)
+
+            return lp.add(rp).mod(BigInteger("18446744073709551616"))
+        }
+
+        /**
+         * Convert bytes to string.
+         *
+         * @param data bytes array
+         * @return string
+         */
+        fun convertBytesToString(data: ByteArray): String {
+            val buffer = ByteArrayOutputStream()
+            for (i in data.indices) {
+                val uVal = (data[i].toInt() and 0xFF).toByte()
+
+                buffer.write(ENCODE_BYTE_TABLE[uVal.toInt() ushr 4].toInt())
+                buffer.write(ENCODE_BYTE_TABLE[(uVal.toInt() and 0xF).toByte().toInt()].toInt())
+            }
+
+            return String(buffer.toByteArray())
+        }
+
+        fun addressChecksum(address: Array<UInt8>) = checksum(address.sliceArray(IntRange(0, address.size - 5)))
+
+        fun checksum(address: Array<UInt8>): Array<UInt8> {
+            var checksum = getHash(address.asByteArray(), Parameter.KECCAK_256).asUInt8Array()
+            return checksum.sliceArray(IntRange(0, 3))
+        }
     }
 }
 
-private const val CHARS = "0123456789abcdef"
-
-/**
- *  Returns 2 char hex string for Byte
- */
-fun Byte.toHexString() = toInt().let {
-    CHARS[it.shr(4) and 0x0f].toString() + CHARS[it.and(0x0f)].toString()
-}
-
-fun ByteArray.toHexString(prefix: String = "0x") = prefix + map { it.toHexString() }.joinToString("")
-fun List<Byte>.toHexString(prefix: String = "0x") = toByteArray().toHexString(prefix)
-
 enum class Parameter constructor(val r: Int,
                                  val outputLengthInBytes: Int,
-                                 val d: String) {
+                                 val d: Int) {
 
-    KECCAK_224(1152, 28, "01"),
-    KECCAK_256(1088, 32, "01"),
-    KECCAK_384(832, 48, "01"),
-    KECCAK_512(576, 64, "01"),
-    SHA3_224(1152, 28, "06"),
-    SHA3_256(1088, 32, "06"),
-    SHA3_384(832, 48, "06"),
-    SHA3_512(576, 64, "06"),
-    SHAKE128(1344, 32, "1F"),
-    SHAKE256(1088, 64, "1F")
+    KECCAK_224(1152, 28, 0x01),
+    KECCAK_256(1088, 32, 0x01),
+    KECCAK_384(832, 48, 0x01),
+    KECCAK_512(576, 64, 0x01),
+    SHA3_224(1152, 28, 0x06),
+    SHA3_256(1088, 32, 0x06),
+    SHA3_384(832, 48, 0x06),
+    SHA3_512(576, 64, 0x06),
+    SHAKE128(1344, 32, 0x1F),
+    SHAKE256(1088, 64, 0x1F)
 }
