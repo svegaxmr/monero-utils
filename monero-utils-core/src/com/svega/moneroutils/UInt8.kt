@@ -62,3 +62,5 @@ fun Array<UInt8>.asString() : String{
 fun Array<UInt8>.asByteArray(): ByteArray {
     return ByteArray(this.size, {x -> this[x].toByte()})
 }
+
+fun ByteArray.asUInt8Array() = Array(this.size, {x -> this[x].toUInt8()})
