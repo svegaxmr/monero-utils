@@ -26,6 +26,7 @@ open class IntegratedAddress : MoneroAddress {
         val checksum = Keccak.checksum(toHash)
         bytes = toHash + checksum
         MoneroAddress.validateChecksum(bytes, "Integrated address creation")
+        address = Base58.encode(BinHexUtils.binaryToHex(bytes))
         validate()
     }
 

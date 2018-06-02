@@ -5,7 +5,7 @@ import com.svega.moneroutils.crypto.Keccak
 
 abstract class MoneroAddress {
     protected var bytes: Array<UInt8>
-    private var address: String
+    protected var address: String
     val net: NetType
     abstract val BYTES: Int
     abstract val LENGTH: Int
