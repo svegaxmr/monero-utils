@@ -43,12 +43,12 @@ class Keccak{
                     blockSize = 0
                 }
 
-                inputOffset = inputOffset + blockSize
+                inputOffset += blockSize
             }
 
             // Padding phase
             uState[blockSize] = uState[blockSize] xor parameter.d
-            if (parameter.d and 0x80 !== 0 && blockSize == rateInBytes - 1) {
+            if (parameter.d and 0x80 != 0 && blockSize == rateInBytes - 1) {
                 doKeccakf(uState)
             }
 
@@ -76,8 +76,8 @@ class Keccak{
         private fun doKeccakf(uState: IntArray) {
             val lState = Array<Array<BigInteger>>(5) { Array(5, {BigInteger.ZERO}) }
 
-            for (i in 0..4) {
-                for (j in 0..4) {
+            for (i in 0 until 5) {
+                for (j in 0 until 5) {
                     val data = IntArray(8)
                     arraycopy(uState, 8 * (i + 5 * j), data, 0, data.size)
                     lState[i][j] = convertFromLittleEndianTo64(data)
@@ -86,8 +86,8 @@ class Keccak{
             roundB(lState)
 
             fill(uState, 0)
-            for (i in 0..4) {
-                for (j in 0..4) {
+            for (i in 0 until 5) {
+                for (j in 0 until 5) {
                     val data = convertFrom64ToLittleEndian(lState[i][j])
                     arraycopy(data, 0, uState, 8 * (i + 5 * j), data.size)
                 }
@@ -102,22 +102,22 @@ class Keccak{
          */
         private fun roundB(state: Array<Array<BigInteger>>) {
             var LFSRstate = 1
-            for (round in 0..23) {
+            for (round in 0 until 24) {
                 val C = Array(5, {BigInteger.ZERO})
                 val D = Array(5, {BigInteger.ZERO})
 
                 // θ step
-                for (i in 0..4) {
-                    C[i] = state[i][0].xor(state[i][1]).xor(state[i][2]).xor(state[i][3]).xor(state[i][4])
+                for (i in 0 until 5) {
+                    C[i] = state[i][0] xor state[i][1] xor state[i][2] xor state[i][3] xor state[i][4]
                 }
 
-                for (i in 0..4) {
-                    D[i] = C[(i + 4) % 5].xor(leftRotate64(C[(i + 1) % 5], 1))
+                for (i in 0 until 5) {
+                    D[i] = C[(i + 4) % 5] xor leftRotate64(C[(i + 1) % 5], 1)
                 }
 
-                for (i in 0..4) {
-                    for (j in 0..4) {
-                        state[i][j] = state[i][j].xor(D[i])
+                for (i in 0 until 5) {
+                    for (j in 0 until 5) {
+                        state[i][j] = state[i][j] xor D[i]
                     }
                 }
 
@@ -125,7 +125,7 @@ class Keccak{
                 var x = 1
                 var y = 0
                 var current = state[x][y]
-                for (i in 0..23) {
+                for (i in 0 until 24) {
                     val tX = x
                     x = y
                     y = (2 * tX + 3 * y) % 5
@@ -137,27 +137,27 @@ class Keccak{
                 }
 
                 //χ step
-                for (j in 0..4) {
+                for (j in 0 until 5) {
                     val t = Array<BigInteger>(5, {BigInteger.ZERO})
-                    for (i in 0..4) {
+                    for (i in 0 until 5) {
                         t[i] = state[i][j]
                     }
 
-                    for (i in 0..4) {
+                    for (i in 0 until 5) {
                         // ~t[(i + 1) % 5]
-                        val invertVal = t[(i + 1) % 5].xor(BIT_64)
+                        val invertVal = t[(i + 1) % 5] xor BIT_64
                         // t[i] ^ ((~t[(i + 1) % 5]) & t[(i + 2) % 5])
-                        state[i][j] = t[i].xor(invertVal.and(t[(i + 2) % 5]))
+                        state[i][j] = t[i] xor (invertVal and (t[(i + 2) % 5]))
                     }
                 }
 
                 //ι step
-                for (i in 0..6) {
+                for (i in 0 until 7) {
                     LFSRstate = (LFSRstate shl 1 xor (LFSRstate shr 7) * 0x71) % 256
                     // pow(2, i) - 1
                     val bitPosition = (1 shl i) - 1
                     if (LFSRstate and 2 != 0) {
-                        state[0][0] = state[0][0].xor(BigInteger("1").shiftLeft(bitPosition))
+                        state[0][0] = state[0][0] xor (BigInteger.ONE shl bitPosition)
                     }
                 }
             }
@@ -187,9 +187,9 @@ class Keccak{
          * @return 64-bit value (unsigned long)
          */
         fun convertFromLittleEndianTo64(data: IntArray): BigInteger {
-            var uLong = BigInteger("0")
-            for (i in 0..7) {
-                uLong = uLong.add(BigInteger(Integer.toString(data[i])).shiftLeft(8 * i))
+            var uLong = BigInteger.ZERO
+            for (i in 0 until 8) {
+                uLong += data[i].toBigInteger() shl (8 * i)
             }
 
             return uLong
@@ -204,8 +204,8 @@ class Keccak{
         fun convertFrom64ToLittleEndian(uLong: BigInteger): IntArray {
             val data = IntArray(8)
             val mod256 = BigInteger("256")
-            for (i in 0..7) {
-                data[i] = uLong.shiftRight(8 * i).mod(mod256).toInt()
+            for (i in 0 until 8) {
+                data[i] = ((uLong shr (8 * i)) % mod256).toInt()
             }
 
             return data
@@ -219,10 +219,10 @@ class Keccak{
          * @return result
          */
         fun leftRotate64(value: BigInteger, rotate: Int): BigInteger {
-            val lp = value.shiftRight(64 - rotate % 64)
-            val rp = value.shiftLeft(rotate % 64)
+            val lp = value shr (64 - rotate % 64)
+            val rp = value shl (rotate % 64)
 
-            return lp.add(rp).mod(BigInteger("18446744073709551616"))
+            return lp + rp % BigInteger("18446744073709551616")
         }
 
         /**
@@ -245,10 +245,7 @@ class Keccak{
 
         fun addressChecksum(address: Array<UInt8>) = checksum(address.sliceArray(IntRange(0, address.size - 5)))
 
-        fun checksum(address: Array<UInt8>): Array<UInt8> {
-            var checksum = getHash(address.asByteArray(), Parameter.KECCAK_256).asUInt8Array()
-            return checksum.sliceArray(IntRange(0, 3))
-        }
+        fun checksum(address: Array<UInt8>) = getHash(address.asByteArray(), Parameter.KECCAK_256).asUInt8Array().sliceArray(IntRange(0, 3))
     }
 }
 
