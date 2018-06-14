@@ -1,41 +1,51 @@
 package com.svega.moneroutils
 
-import com.svega.moneroutils.BinHexUtils.Companion.binaryToString
-import com.svega.moneroutils.BinHexUtils.Companion.hexToBinary
-import com.svega.moneroutils.BinHexUtils.Companion.stringToBinary
+import com.svega.common.math.*
+import com.svega.moneroutils.BinHexUtils.binaryToString
+import com.svega.moneroutils.BinHexUtils.hexToBinary
+import com.svega.moneroutils.BinHexUtils.stringToBinary
 import java.math.BigInteger
 
-object Base58 {
-	val alphabetStr = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+object Base58{
+	private val alphabetStr = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	private val alphabet = alphabetStr.toByteArray()
 	private val encodedBlockSizes = intArrayOf(0, 2, 3, 5, 6, 7, 9, 10, 11)
 	private val alphabetSize = alphabet.size
 	private val fullBlockSize = 8
 	private val fullEncodedBlockSize = 11
-	private val UINT64_MAX = BigInteger("2").pow(64)
+
+	fun getAlphabetStr() = alphabetStr
 
 	private fun uint8BufToUInt64(data: Array<UInt8>) : BigInteger{
 		if (data.isEmpty() || data.size > 8) {
 			throw MoneroException("Invalid input length "+data.size)
 		}
-		return BigInteger(data.asByteArray())
+		var res = BigInteger.ZERO
+		val twoPow8 = BigInteger("2").pow(8)
+		var i = 0
+		var c = 9 - data.size
+		while (c <= 8) {
+			res = when(c == 1) {
+				true -> res.add(BigInteger.valueOf(data[i++].toLong()))
+				false -> res.multiply(twoPow8).add(BigInteger.valueOf(data[i++].toLong()))
+			}
+			++c
+		}
+		return res
 	}
 
 	private fun uint64ToUInt8Buf(num_: BigInteger, size: Int) : Array<UInt8> {
 		if (size < 1 || size > 8) {
 			throw MoneroException("Invalid input length")
 		}
-		if(num_ > UINT64_MAX){
-			throw MoneroException("Number is too large")
-		}
 
-		val numByteArray = num_.toByteArray().asUInt8Array()
-		val res = Array(size, {UInt8(0)})
-		System.arraycopy(numByteArray,
-			if(numByteArray.size <= size) 0 else numByteArray.size - size,
-			res,
-			size - if(numByteArray.size <= size) numByteArray.size else size,
-			if(numByteArray.size <= size) numByteArray.size else size)
+		var num = num_
+		val res = Array(size, {_ -> UInt8(0)})
+		val twoPow8 = BigInteger("2").pow(8)
+		for (i in size - 1 downTo 0) {
+			res[i] = num.remainder(twoPow8).toLong().toUInt8()
+			num = num.divide(twoPow8)
+		}
 		return res
 	}
 
@@ -93,12 +103,12 @@ object Base58 {
 		for (i in data.size - 1 downTo 0) {
 			val digit = alphabet.indexOf(data[i].toByte())
 			if (digit < 0) {
-			    throw MoneroException("Invalid symbol")
+				throw MoneroException("Invalid symbol")
 			}
 			val product = order.multiply(digit.toBigInteger()).add(resNum)
 			// if product > UINT64_MAX
-			if (product > UINT64_MAX) {
-			    throw MoneroException("Overflow")
+			if (product > BigInteger("2").pow(64)) {
+				throw MoneroException("Overflow")
 			}
 			resNum = product
 			order = order.multiply(alphabetSize.toBigInteger())

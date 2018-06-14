@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="monero-utils-core:jar-core">
+    <output-path>$PROJECT_DIR$/bin/artifacts/monero_utils_core_jar_core</output-path>
+    <root id="archive" name="monero-utils-core.jar">
+      <element id="module-output" name="monero-utils-core" />
+    </root>
+  </artifact>
+</component>

@@ -1,5 +1,7 @@
 package com.svega.moneroutils
 
+import com.svega.common.math.*
+
 object BinHexUtils {
     fun hexToBinary(hex: String) = hexToByteArray(hex).asUInt8Array()
 

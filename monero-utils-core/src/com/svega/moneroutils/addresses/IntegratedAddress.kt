@@ -1,7 +1,8 @@
 package com.svega.moneroutils.addresses
 
+import com.svega.common.math.*
+import com.svega.crypto.common.algos.Keccak
 import com.svega.moneroutils.*
-import com.svega.moneroutils.crypto.Keccak
 
 open class IntegratedAddress : MoneroAddress {
     override val LENGTH = 106

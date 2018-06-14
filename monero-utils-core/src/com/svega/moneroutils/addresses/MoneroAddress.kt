@@ -1,7 +1,8 @@
 package com.svega.moneroutils.addresses
 
 import com.svega.moneroutils.*
-import com.svega.moneroutils.crypto.Keccak
+import com.svega.common.math.*
+import com.svega.crypto.common.algos.Keccak
 
 abstract class MoneroAddress {
     protected var bytes: Array<UInt8>
