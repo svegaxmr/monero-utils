@@ -11,4 +11,13 @@ enum class NetType(mainaddr: Int, integrated: Int, subaddr: Int) {
     val INTEGRATED = integrated.toUInt8()
     val SUBADDR = subaddr.toUInt8()
 
+    fun getPrefix(type: AddressType): UInt8 {
+        return when(type){
+            AddressType.MAIN -> this.MAINADDR
+            AddressType.INTEGATED -> this.INTEGRATED
+            AddressType.SUBADDRESS -> this.SUBADDR
+        }
+    }
+
+    fun getPrefixStr(type: AddressType) = BinHexUtils.binaryToHex(Array(1, {getPrefix(type)}))
 }
