@@ -11,9 +11,9 @@ data class FullKey(val spend: KeyPair, val view: KeyPair): Serializable{
             throw MoneroException("Spend public data is not 32 bytes!")
         if(view.public.data.size != 32)
             throw MoneroException("View public data is not 32 bytes!")
-        if(spend.secret?.data?.size != 32)
+        if((spend.secret != null) and (spend.secret?.data?.size != 32))
             throw MoneroException("Spend private data is not 32 bytes!")
-        if(view.secret?.data?.size != 32)
+        if((view.secret != null) and (view.secret?.data?.size != 32))
             throw MoneroException("View private data is not 32 bytes!")
     }
     fun getAddressString(addressType: AddressType, netType: NetType): String{
