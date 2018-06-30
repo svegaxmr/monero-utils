@@ -29,7 +29,7 @@ abstract class MoneroAddress: Serializable {
         key = FullKey(spend, view)
     }
 
-    constructor(seed: ByteArray? = null, secretSpendKey: SecretKey? = null, net: NetType, addrType: AddressType){
+    protected constructor(seed: ByteArray? = null, secretSpendKey: SecretKey? = null, net: NetType, addrType: AddressType){
         if((seed == null) and (secretSpendKey == null))
             throw MoneroException("seed and secret spend key cannot be null!")
         this.net = net
@@ -45,7 +45,7 @@ abstract class MoneroAddress: Serializable {
         bytes = key.getAddressBytes(addrType, net).asUInt8Array()
     }
 
-    constructor(key: FullKey, net: NetType, addrType: AddressType){
+    protected constructor(key: FullKey, net: NetType, addrType: AddressType){
         this.key = key
         this.net = net
         seed = null
@@ -61,9 +61,7 @@ abstract class MoneroAddress: Serializable {
         validateChecksum(bytes, address)
     }
 
-    fun getAddressString() : String{
-        return address
-    }
+    fun getAddressString() = address
 
     @Throws(IOException::class)
     private fun writeObject(stream: ObjectOutputStream) {
