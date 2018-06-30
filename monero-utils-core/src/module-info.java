@@ -7,5 +7,6 @@ module monero.utils.core {
     requires java.base;
     requires svega.common.utils;
     requires jvm.crypto;
+    requires jvm.ed25519;
 
 }
