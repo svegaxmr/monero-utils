@@ -7,12 +7,13 @@ import com.svega.moneroutils.BinHexUtils.stringToBinary
 import java.math.BigInteger
 
 object Base58{
-	private val alphabetStr = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+	private const val alphabetStr = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 	private val alphabet = alphabetStr.toByteArray()
 	private val encodedBlockSizes = intArrayOf(0, 2, 3, 5, 6, 7, 9, 10, 11)
 	private val alphabetSize = alphabet.size
-	private val fullBlockSize = 8
-	private val fullEncodedBlockSize = 11
+	private const val fullBlockSize = 8
+	private const val fullEncodedBlockSize = 11
+	private val twoPow8 = BigInteger("2").pow(8)
 
 	fun getAlphabetStr() = alphabetStr
 
@@ -20,15 +21,11 @@ object Base58{
 		if (data.isEmpty() || data.size > 8) {
 			throw MoneroException("Invalid input length "+data.size)
 		}
-		var res = BigInteger.ZERO
-		val twoPow8 = BigInteger("2").pow(8)
+		val res = BigInteger.ZERO
 		var i = 0
 		var c = 9 - data.size
 		while (c <= 8) {
-			res = when(c == 1) {
-				true -> res.add(BigInteger.valueOf(data[i++].toLong()))
-				false -> res.multiply(twoPow8).add(BigInteger.valueOf(data[i++].toLong()))
-			}
+			res.multiply(twoPow8).add(BigInteger.valueOf(data[i++].toLong()))
 			++c
 		}
 		return res
@@ -40,8 +37,7 @@ object Base58{
 		}
 
 		var num = num_
-		val res = Array(size, {_ -> UInt8(0)})
-		val twoPow8 = BigInteger("2").pow(8)
+		val res = Array(size, {UInt8(0)})
 		for (i in size - 1 downTo 0) {
 			res[i] = num.remainder(twoPow8).toLong().toUInt8()
 			num = num.divide(twoPow8)
@@ -125,7 +121,7 @@ object Base58{
 	fun decode(enc_: String): Array<UInt8> {
 		val enc = stringToBinary(enc_)
 		if (enc.isEmpty()) {
-			return Array(0, {_ -> UInt8(0) })
+			return Array(0, {UInt8(0)})
 		}
 		val fullBlockCount = Math.floor(enc.size.toDouble() / fullEncodedBlockSize).toInt()
 		val lastBlockSize = enc.size % fullEncodedBlockSize
@@ -134,7 +130,7 @@ object Base58{
 			throw MoneroException("Invalid encoded length")
 		}
 		val dataSize = fullBlockCount * fullBlockSize + lastDecodedBlockSize
-		var data = Array(dataSize, {_ -> UInt8(0) })
+		var data = Array(dataSize, {UInt8(0)})
 		for (i in 0 until fullBlockCount) {
 			data = decodeBlock(enc.sliceArray(IntRange(i * fullEncodedBlockSize, i * fullEncodedBlockSize + fullEncodedBlockSize - 1)), data, i * fullBlockSize)
 		}
