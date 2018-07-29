@@ -14,6 +14,7 @@ object Base58{
 	private const val fullBlockSize = 8
 	private const val fullEncodedBlockSize = 11
 	private val twoPow8 = BigInteger("2").pow(8)
+	private val UINT64_MAX = BigInteger("2").pow(64)
 
 	fun getAlphabetStr() = alphabetStr
 
@@ -21,12 +22,13 @@ object Base58{
 		if (data.isEmpty() || data.size > 8) {
 			throw MoneroException("Invalid input length "+data.size)
 		}
-		val res = BigInteger.ZERO
+		var res = BigInteger.ZERO
 		var i = 0
-		var c = 9 - data.size
-		while (c <= 8) {
-			res.multiply(twoPow8).add(BigInteger.valueOf(data[i++].toLong()))
-			++c
+		for(c in 9 - data.size until 9) {
+			res = when(c == 1) {
+				true -> res.add(BigInteger.valueOf(data[i++].toLong()))
+				false -> res.multiply(twoPow8).add(BigInteger.valueOf(data[i++].toLong()))
+			}
 		}
 		return res
 	}
@@ -35,13 +37,16 @@ object Base58{
 		if (size < 1 || size > 8) {
 			throw MoneroException("Invalid input length")
 		}
-
-		var num = num_
-		val res = Array(size, {UInt8(0)})
-		for (i in size - 1 downTo 0) {
-			res[i] = num.remainder(twoPow8).toLong().toUInt8()
-			num = num.divide(twoPow8)
+		if(num_ > UINT64_MAX){
+			throw MoneroException("Number is too large")
 		}
+		val numByteArray = num_.toByteArray().asUInt8Array()
+		val res = Array(size) {UInt8(0)}
+		System.arraycopy(numByteArray,
+				if(numByteArray.size <= size) 0 else numByteArray.size - size,
+				res,
+				size - if(numByteArray.size <= size) numByteArray.size else size,
+				if(numByteArray.size <= size) numByteArray.size else size)
 		return res
 	}
 
@@ -73,7 +78,7 @@ object Base58{
 		val fullBlockCount = Math.floor(data.size.toDouble() / fullBlockSize).toInt()
 		val lastBlockSize = data.size % fullBlockSize
 		val resSize = (fullBlockCount * fullEncodedBlockSize + encodedBlockSizes[lastBlockSize])
-		var res = Array(resSize, {_ -> UInt8(0)})
+		var res = Array(resSize) { UInt8(0)}
 		for (i in 0 until resSize) {
 			res[i] = alphabet[0].toUInt8()
 		}
@@ -102,8 +107,7 @@ object Base58{
 				throw MoneroException("Invalid symbol")
 			}
 			val product = order.multiply(digit.toBigInteger()).add(resNum)
-			// if product > UINT64_MAX
-			if (product > BigInteger("2").pow(64)) {
+			if (product > UINT64_MAX) {
 				throw MoneroException("Overflow")
 			}
 			resNum = product
@@ -121,7 +125,7 @@ object Base58{
 	fun decode(enc_: String): Array<UInt8> {
 		val enc = stringToBinary(enc_)
 		if (enc.isEmpty()) {
-			return Array(0, {UInt8(0)})
+			return Array(0) { UInt8(0) }
 		}
 		val fullBlockCount = Math.floor(enc.size.toDouble() / fullEncodedBlockSize).toInt()
 		val lastBlockSize = enc.size % fullEncodedBlockSize
@@ -130,7 +134,7 @@ object Base58{
 			throw MoneroException("Invalid encoded length")
 		}
 		val dataSize = fullBlockCount * fullBlockSize + lastDecodedBlockSize
-		var data = Array(dataSize, {UInt8(0)})
+		var data = Array(dataSize) { UInt8(0) }
 		for (i in 0 until fullBlockCount) {
 			data = decodeBlock(enc.sliceArray(IntRange(i * fullEncodedBlockSize, i * fullEncodedBlockSize + fullEncodedBlockSize - 1)), data, i * fullBlockSize)
 		}
