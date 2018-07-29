@@ -1,7 +1,7 @@
 <component name="libraryTable">
-  <library name="svega-common-utils-core">
+  <library name="jvm-ed25519-core">
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/svega-common-utils-core.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jvm-ed25519-core.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
