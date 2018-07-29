@@ -7,39 +7,40 @@ import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
 
-class Block{
-    private var major = -1
-    private var minor = -1
-    private var timestamp = Date(0)
-    private var lastHash = ByteArray(32)
-    private var nonce = 0L
-    private lateinit var coinbase: CoinbaseTransaction
-    private var extra = ByteArray(0)
-    private var txids = ArrayList<ByteArray>() //TODO: Daemon?
-    private var txes = ArrayList<MoneroTransaction>() //TODO: Daemon?
+open class Block private constructor() {
+    var major = -1
+    var minor = -1
+    var timestamp = Date(0)
+    var lastHash = ByteArray(32)
+    var nonce = 0L
+    lateinit var coinbase: CoinbaseTransaction
+    var extra = ByteArray(0)
+    var txids = ArrayList<ByteArray>() //TODO: Daemon?
+    var txes = ArrayList<MoneroTransaction>() //TODO: Daemon?
+    lateinit var byteBuffer: ByteBuffer
     companion object {
         fun parseBlobHeader(header: String){
-            val bb = ByteBuffer.allocate(header.length / 2).put(BinHexUtils.hexToByteArray(header)).rewind()
             val block = Block()
-            block.major = bb.getVarInt()
-            block.minor = bb.getVarInt()
-            block.timestamp = Date(bb.getVarInt() * 1000L)
+            block.byteBuffer = ByteBuffer.allocateDirect(header.length / 2).put(BinHexUtils.hexToByteArray(header)).rewind()
+            block.major = block.byteBuffer.getVarInt()
+            block.minor = block.byteBuffer.getVarInt()
+            block.timestamp = Date(block.byteBuffer.getVarInt() * 1000L)
             block.lastHash = ByteArray(32)
-            bb.get(block.lastHash)
-            block.nonce = SWAP32(bb.int).toLong() and 0xffffffffL
+            block.byteBuffer.get(block.lastHash)
+            block.nonce = SWAP32(block.byteBuffer.int).toLong() and 0xffffffffL
             println("Block ver ${block.major}.${block.minor} at time ${block.timestamp} with a previous hash of " +
                     "${BinHexUtils.binaryToHex(block.lastHash)} and nonce ${block.nonce}")
-            CoinbaseTransaction.parseFromBlob(bb)
-            val extraSize = bb.getVarInt()
+            CoinbaseTransaction.parseFromBlob(block.byteBuffer)
+            val extraSize = block.byteBuffer.getVarInt()
             block.extra = ByteArray(extraSize)
-            bb.get(block.extra)
+            block.byteBuffer.get(block.extra)
             println("Extra is ${BinHexUtils.binaryToHex(block.extra)}")
-            val numRCTSigs = bb.getVarInt()
+            val numRCTSigs = block.byteBuffer.getVarInt()
             println("numRCTSigs is $numRCTSigs")
-            val numTxes = bb.getVarInt()
+            val numTxes = block.byteBuffer.getVarInt()
             val txid = ByteArray(32)
             for(i in 0 until numTxes){
-                bb.get(txid)
+                block.byteBuffer.get(txid)
                 block.txids.add(Arrays.copyOf(txid, 32))
                 println("Has tx ${BinHexUtils.binaryToHex(txid)}")
             }
