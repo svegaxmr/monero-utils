@@ -35,7 +35,7 @@
     <orderEntry type="library" name="jvm-crypto-core" level="project" />
     <orderEntry type="library" name="jvm-ed25519-core" level="project" />
     <orderEntry type="module-library">
-      <library name="Maven: com.svega:jvm.ed25519:1">
+      <library name="Maven: com.github.svegaxmr:jvm.ed25519:1">
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/jvm-ed25519-core.jar!/" />
         </CLASSES>
@@ -44,7 +44,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: com.svega:jvm.crypto:1">
+      <library name="Maven: com.github.svegaxmr:jvm.crypto:1">
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/jvm-crypto-core.jar!/" />
         </CLASSES>
@@ -53,7 +53,7 @@
       </library>
     </orderEntry>
     <orderEntry type="module-library">
-      <library name="Maven: com.svega:common.utils:0.2.2">
+      <library name="Maven: com.github.svegaxmr:common.utils:0.2.2">
         <CLASSES>
           <root url="jar://$MODULE_DIR$/lib/svega-common-utils-core.jar!/" />
         </CLASSES>

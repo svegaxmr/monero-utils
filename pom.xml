@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>groupId</groupId>
+    <groupId>com.github.svegaxmr</groupId>
     <artifactId>monero-utils-core</artifactId>
     <version>0.2.0</version>
 
@@ -16,21 +16,21 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.svega</groupId>
+            <groupId>com.github.svegaxmr</groupId>
             <artifactId>jvm.ed25519</artifactId>
             <version>1</version>
             <scope>system</scope>
             <systemPath>${basedir}/lib/jvm-ed25519-core.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>com.svega</groupId>
+            <groupId>com.github.svegaxmr</groupId>
             <artifactId>jvm.crypto</artifactId>
             <version>1</version>
             <scope>system</scope>
             <systemPath>${basedir}/lib/jvm-crypto-core.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>com.svega</groupId>
+            <groupId>com.github.svegaxmr</groupId>
             <artifactId>common.utils</artifactId>
             <version>0.2.2</version>
             <scope>system</scope>
