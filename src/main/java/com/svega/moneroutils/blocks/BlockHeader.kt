@@ -6,10 +6,15 @@ import java.util.*
 
 class BlockHeader {
     var major = -1
+        private set
     var minor = -1
+        private set
     var timestamp = Date(0)
+        private set
     var lastHash = ByteArray(32)
+        private set
     var nonce = 0L
+        private set
     companion object {
         fun parseBlockBlobHeader(buffer: ByteBuffer): BlockHeader {
             val blockHeader = BlockHeader()
@@ -19,8 +24,6 @@ class BlockHeader {
             blockHeader.lastHash = ByteArray(32)
             buffer.get(blockHeader.lastHash)
             blockHeader.nonce = SWAP32(buffer.int).toLong() and 0xffffffffL
-            println("bh maj ${blockHeader.major} min ${blockHeader.minor} timestamp ${blockHeader.timestamp.time}" +
-                    " lastHash ${BinHexUtils.binaryToHex(blockHeader.lastHash)} nonce ${blockHeader.nonce}")
             return blockHeader
         }
 
@@ -29,6 +32,6 @@ class BlockHeader {
     }
 
     override fun toString(): String {
-        return "BlockHeader(major=$major, minor=$minor, timestamp=$timestamp, lastHash=${Arrays.toString(lastHash)}, nonce=$nonce)"
+        return "BlockHeader(major=$major, minor=$minor, timestamp=$timestamp, lastHash=${BinHexUtils.binaryToHex(lastHash)}, nonce=$nonce)"
     }
 }

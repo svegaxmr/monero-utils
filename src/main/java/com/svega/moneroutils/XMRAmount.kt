@@ -2,9 +2,7 @@ package com.svega.moneroutils
 
 class XMRAmount(amount: Long) {
     var atomicUnits = amount
-        private set(value){
-            field = value
-        }
+        private set
     companion object {
         fun fromOther(inUnits: Double, division: AmountDivision) = XMRAmount((inUnits * division.multiplier).toLong())
         fun toOther(amount: XMRAmount, newDivision: AmountDivision) = (amount.atomicUnits / newDivision.multiplier)

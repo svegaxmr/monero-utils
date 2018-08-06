@@ -9,10 +9,15 @@ import kotlin.collections.ArrayList
 open class Block private constructor() {
     lateinit var blockHeader: BlockHeader
     lateinit var coinbase: CoinbaseTransaction
-    var extra = ByteArray(0)
-    var unknown = -1
-    var txids = ArrayList<ByteArray>()
     lateinit var byteBuffer: ByteBuffer
+    var extra = ByteArray(0)
+        private set
+    var unknown = Long.MIN_VALUE
+        private set
+    val txids = ArrayList<ByteArray>()
+    var numRCTSigs = -1
+        private set
+    val hasRCTSigs get() = blockHeader.major > 1
     companion object {
         fun parseBlobHeader(header: String): Block {
             val block = Block()
@@ -22,17 +27,11 @@ open class Block private constructor() {
                 blockHeader = BlockHeader.parseBlockBlobHeader(byteBuffer)
                 coinbase = CoinbaseTransaction.parseFromBlob(byteBuffer)
 
-                if(blockHeader.major > 1) {
-                    val numRCTSigs = byteBuffer.getVarInt()
-                    println("numRCTSigs is $numRCTSigs")
-                }else{
-                    println("maj v1 has no rctsigs")
+                if(hasRCTSigs) {
+                    numRCTSigs = byteBuffer.getVarInt()
                 }
-                byteBuffer.printNextBytes(4)
-                unknown = byteBuffer.getVarInt()
-                println("unknown is $unknown")
+                unknown = byteBuffer.getVarLong()
                 val numTxes = byteBuffer.getVarInt()
-                println("there are $numTxes tx in block")
                 val txid = ByteArray(32)
                 for(i in 0 until numTxes){
                     byteBuffer.get(txid)
@@ -41,10 +40,13 @@ open class Block private constructor() {
                 val extraSize = byteBuffer.getVarInt()
                 extra = ByteArray(extraSize)
                 byteBuffer.get(extra)
-                println("Extra is ${BinHexUtils.binaryToHex(extra)}")
             }
             return block
         }
+    }
+
+    override fun toString(): String {
+        return "Block(\n\tblockHeader=$blockHeader,\n\tcoinbase=$coinbase,\n\textra=${BinHexUtils.binaryToHex(extra)}, unknown=$unknown, txids=$txids)"
     }
 }
 
@@ -143,7 +145,7 @@ fun ByteBuffer.getVarInt(): Int {
 
 fun ByteBuffer.printNextBytes(n: Int){
     mark()
-    val one = ByteArray(n)
+    val one = if(n < remaining()) ByteArray(n) else ByteArray(remaining())
     get(one)
     reset()
     println("next is ${BinHexUtils.binaryToHex(one)}")
