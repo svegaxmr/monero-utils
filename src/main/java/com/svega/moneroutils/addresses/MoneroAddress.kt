@@ -12,11 +12,16 @@ import java.io.ObjectOutputStream
 
 
 abstract class MoneroAddress: Serializable {
-    protected var bytes: Array<UInt8>
-    protected var address: String
+    var bytes: Array<UInt8>
+        protected set
+    var address: String
+        protected set
     var key: FullKey
+        private set
     var net: NetType
+        private set
     var seed: ByteArray?
+        private set
     abstract val BYTES: Int
     abstract val LENGTH: Int
     protected constructor(address: String, net: NetType){
@@ -60,8 +65,6 @@ abstract class MoneroAddress: Serializable {
             throw MoneroException("Address $address is not $BYTES bytes long!")
         validateChecksum(bytes, address)
     }
-
-    fun getAddressString() = address
 
     @Throws(IOException::class)
     private fun writeObject(stream: ObjectOutputStream) {
