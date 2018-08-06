@@ -30,11 +30,7 @@ open class CoinbaseTransaction: MoneroTransaction(arrayListOf()){
     }
 
     override fun toString(): String {
-        var amt = 0L
-        for (tx in outs){
-            amt += tx.amt
-        }
-        return "CoinbaseTransaction(header=$header, amt=${XMRAmount(amt).toOther(AmountDivision.WHOLE)})"
+        return "CoinbaseTransaction(header=$header, amt=${totalOut.toOther(AmountDivision.WHOLE)})"
     }
 }
 
