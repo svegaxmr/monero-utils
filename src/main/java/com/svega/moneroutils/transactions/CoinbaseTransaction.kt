@@ -11,9 +11,7 @@ open class CoinbaseTransaction: MoneroTransaction(arrayListOf()){
     var totalOut = XMRAmount(0)
         private set
     val outs = ArrayList<CoinbaseTXOut>()
-        get() {
-            return ArrayList(field)
-        }
+        get() = ArrayList(field)
     companion object {
         fun parseFromBlob(bb: ByteBuffer): CoinbaseTransaction {
             val ret = CoinbaseTransaction()

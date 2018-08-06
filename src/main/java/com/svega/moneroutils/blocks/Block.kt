@@ -15,6 +15,7 @@ open class Block private constructor() {
     var unknown = Long.MIN_VALUE
         private set
     val txids = ArrayList<ByteArray>()
+        get() = ArrayList(field)
     var numRCTSigs = -1
         private set
     val hasRCTSigs get() = blockHeader.major > 1
