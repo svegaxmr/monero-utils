@@ -4,11 +4,25 @@ import com.svega.crypto.ed25519.ge_p3_tobytes
 import com.svega.crypto.ed25519.ge_scalarmult_base
 import com.svega.crypto.ed25519.objects.ge_p3
 import com.svega.moneroutils.BinHexUtils
+import com.svega.moneroutils.MoneroException
 import java.io.Serializable
 
-data class Key(val data: ByteArray, val str: String): Serializable {
-    constructor(data: ByteArray): this(data, BinHexUtils.binaryToHex(data))
-    constructor(str: String): this(BinHexUtils.hexToByteArray(str), str)
+data class Key(val data: ByteArray): Serializable {
+    var str: String = ""
+        get() {
+            if(field == "")
+                field = BinHexUtils.binaryToHex(data)
+            return field
+        }
+        private set
+    constructor(str: String): this(BinHexUtils.hexToByteArray(str)){
+        this.str = str
+    }
+    init {
+        if(data.size != 32){
+            throw MoneroException("Key data must be 32 bytes")
+        }
+    }
     override fun equals(other: Any?): Boolean{
         if(other == null)
             return false
