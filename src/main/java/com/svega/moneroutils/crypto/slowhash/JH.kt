@@ -2,13 +2,13 @@ package com.svega.moneroutils.crypto.slowhash
 
 @ExperimentalUnsignedTypes
 data class JHHashState(
-    var hashbitlen: Int,	   	              /*the message digest size*/
+        var hashbitlen: Int,	   	              /*the message digest size*/
     var databitlen: Int,    /*the message size in bits*/
-    var datasize_in_buffer: Int,      /*the size of the message remained in buffer; assumed to be multiple of 8bits except for the last partial block at the end of the message*/
+    var datasizeInBuffer: Int,      /*the size of the message remained in buffer; assumed to be multiple of 8bits except for the last partial block at the end of the message*/
     val x: Array<ULongArray> = cx(),    /*the 1024-bit state, ( x[i][0] || x[i][1] ) is the ith row of the state in the pseudocode*/
     val buffer: Scratchpad = UByteArrayScratchpad(64),         /*the 512-bit message block to be hashed;*/
     val bp: UBytePointer = buffer.getPointer(0),
-    val bpl: ULongPointer = buffer.getPointer(0).toULongPointer()
+        val bpl: ULongPointer = buffer.getPointer(0).toULongPointer()
 ){
     companion object {
         private fun cx() = Array(8){ ULongArray(2)}
@@ -22,7 +22,7 @@ data class JHHashState(
 
         if (hashbitlen != other.hashbitlen) return false
         if (databitlen != other.databitlen) return false
-        if (datasize_in_buffer != other.datasize_in_buffer) return false
+        if (datasizeInBuffer != other.datasizeInBuffer) return false
         if (!x.contentEquals(other.x)) return false
         if (buffer != other.buffer) return false
 
@@ -32,7 +32,7 @@ data class JHHashState(
     override fun hashCode(): Int {
         var result = hashbitlen
         result = 31 * result + databitlen.hashCode()
-        result = 31 * result + datasize_in_buffer.hashCode()
+        result = 31 * result + datasizeInBuffer.hashCode()
         result = 31 * result + x.contentHashCode()
         result = 31 * result + buffer.hashCode()
         return result
@@ -42,7 +42,7 @@ data class JHHashState(
 @ExperimentalUnsignedTypes
 object JH {
     private val JH256_H0 = ubyteArrayOf(0xebu, 0x98u, 0xa3u, 0x41u, 0x2cu, 0x20u, 0xd3u, 0xebu, 0x92u, 0xcdu, 0xbeu, 0x7bu, 0x9cu, 0xb2u, 0x45u, 0xc1u, 0x1cu, 0x93u, 0x51u, 0x91u, 0x60u, 0xd4u, 0xc7u, 0xfau, 0x26u, 0x0u, 0x82u, 0xd6u, 0x7eu, 0x50u, 0x8au, 0x3u, 0xa4u, 0x23u, 0x9eu, 0x26u, 0x77u, 0x26u, 0xb9u, 0x45u, 0xe0u, 0xfbu, 0x1au, 0x48u, 0xd4u, 0x1au, 0x94u, 0x77u, 0xcdu, 0xb5u, 0xabu, 0x26u, 0x2u, 0x6bu, 0x17u, 0x7au, 0x56u, 0xf0u, 0x24u, 0x42u, 0xfu, 0xffu, 0x2fu, 0xa8u, 0x71u, 0xa3u, 0x96u, 0x89u, 0x7fu, 0x2eu, 0x4du, 0x75u, 0x1du, 0x14u, 0x49u, 0x8u, 0xf7u, 0x7du, 0xe2u, 0x62u, 0x27u, 0x76u, 0x95u, 0xf7u, 0x76u, 0x24u, 0x8fu, 0x94u, 0x87u, 0xd5u, 0xb6u, 0x57u, 0x47u, 0x80u, 0x29u, 0x6cu, 0x5cu, 0x5eu, 0x27u, 0x2du, 0xacu, 0x8eu, 0xdu, 0x6cu, 0x51u, 0x84u, 0x50u, 0xc6u, 0x57u, 0x5u, 0x7au, 0xfu, 0x7bu, 0xe4u, 0xd3u, 0x67u, 0x70u, 0x24u, 0x12u, 0xeau, 0x89u, 0xe3u, 0xabu, 0x13u, 0xd3u, 0x1cu, 0xd7u, 0x69u)
-    private val E8_bitslice_roundconstant = Array(42){when(it){
+    private val E8BitsliceRoundconstant = Array(42){when(it){
         0 -> UByteArrayScratchpad(ubyteArrayOf(0x72u,0xd5u,0xdeu,0xa2u,0xdfu,0x15u,0xf8u,0x67u,0x7bu,0x84u,0x15u,0xau,0xb7u,0x23u,0x15u,0x57u,0x81u,0xabu,0xd6u,0x90u,0x4du,0x5au,0x87u,0xf6u,0x4eu,0x9fu,0x4fu,0xc5u,0xc3u,0xd1u,0x2bu,0x40u))
         1 -> UByteArrayScratchpad(ubyteArrayOf(0xeau,0x98u,0x3au,0xe0u,0x5cu,0x45u,0xfau,0x9cu,0x3u,0xc5u,0xd2u,0x99u,0x66u,0xb2u,0x99u,0x9au,0x66u,0x2u,0x96u,0xb4u,0xf2u,0xbbu,0x53u,0x8au,0xb5u,0x56u,0x14u,0x1au,0x88u,0xdbu,0xa2u,0x31u))
         2 -> UByteArrayScratchpad(ubyteArrayOf(0x3u,0xa3u,0x5au,0x5cu,0x9au,0x19u,0xeu,0xdbu,0x40u,0x3fu,0xb2u,0xau,0x87u,0xc1u,0x44u,0x10u,0x1cu,0x5u,0x19u,0x80u,0x84u,0x9eu,0x95u,0x1du,0x6fu,0x33u,0xebu,0xadu,0x5eu,0xe7u,0xcdu,0xdcu))
@@ -142,7 +142,7 @@ object JH {
         for (roundnumber in 0 until 42 step 7) {
             /*round 7*roundnumber+0: Sbox, MDS and Swapping layers*/
             for (i in 0 until 2) {
-                val bp = E8_bitslice_roundconstant[roundnumber+0].getPointer(0).toULongPointer()
+                val bp = E8BitsliceRoundconstant[roundnumber+0].getPointer(0).toULongPointer()
                 SS(state.x, i,bp[i],bp[i+2])
                 L(state.x, i)
                 state.x[1][i] = SWAP1(state.x[1][i])
@@ -153,7 +153,7 @@ object JH {
 
             /*round 7*roundnumber+1: Sbox, MDS and Swapping layers*/
             for (i in 0 until 2) {
-                val bp = E8_bitslice_roundconstant[roundnumber+1].getPointer(0).toULongPointer()
+                val bp = E8BitsliceRoundconstant[roundnumber+1].getPointer(0).toULongPointer()
                 SS(state.x, i,bp[i],bp[i+2] )
                 L(state.x, i)
                 state.x[1][i] = SWAP2(state.x[1][i])
@@ -165,7 +165,7 @@ object JH {
 
             /*round 7*roundnumber+2: Sbox, MDS and Swapping layers*/
             for (i in 0 until 2) {
-                val bp = E8_bitslice_roundconstant[roundnumber+2].getPointer(0).toULongPointer()
+                val bp = E8BitsliceRoundconstant[roundnumber+2].getPointer(0).toULongPointer()
                 SS(state.x, i,bp[i],bp[i+2] )
                 L(state.x, i)
                 state.x[1][i] = SWAP4(state.x[1][i])
@@ -177,7 +177,7 @@ object JH {
 
             /*round 7*roundnumber+3: Sbox, MDS and Swapping layers*/
             for (i in 0 until 2) {
-                val bp = E8_bitslice_roundconstant[roundnumber+3].getPointer(0).toULongPointer()
+                val bp = E8BitsliceRoundconstant[roundnumber+3].getPointer(0).toULongPointer()
                 SS(state.x, i,bp[i],bp[i+2] )
                 L(state.x, i)
                 state.x[1][i] = SWAP8(state.x[1][i])
@@ -189,7 +189,7 @@ object JH {
 
             /*round 7*roundnumber+4: Sbox, MDS and Swapping layers*/
             for (i in 0 until 2) {
-                val bp = E8_bitslice_roundconstant[roundnumber+4].getPointer(0).toULongPointer()
+                val bp = E8BitsliceRoundconstant[roundnumber+4].getPointer(0).toULongPointer()
                 SS(state.x, i,bp[i],bp[i+2] )
                 L(state.x, i)
                 state.x[1][i] = SWAP16(state.x[1][i])
@@ -201,7 +201,7 @@ object JH {
 
             /*round 7*roundnumber+5: Sbox, MDS and Swapping layers*/
             for (i in 0 until 2) {
-                val bp = E8_bitslice_roundconstant[roundnumber+5].getPointer(0).toULongPointer()
+                val bp = E8BitsliceRoundconstant[roundnumber+5].getPointer(0).toULongPointer()
                 SS(state.x, i,bp[i],bp[i+2] )
                 L(state.x, i)
                 state.x[1][i] = SWAP32(state.x[1][i])
@@ -213,7 +213,7 @@ object JH {
 
             /*round 7*roundnumber+6: Sbox and MDS layers*/
             for (i in 0 until 2) {
-                val bp = E8_bitslice_roundconstant[roundnumber+6].getPointer(0).toULongPointer()
+                val bp = E8BitsliceRoundconstant[roundnumber+6].getPointer(0).toULongPointer()
                 SS(state.x, i,bp[i],bp[i+2] )
                 L(state.x, i)
             }
@@ -241,10 +241,10 @@ object JH {
         }
     }
 
-    private fun Init(state: JHHashState, hashbitlen: Int)
+    private fun init(state: JHHashState, hashbitlen: Int)
     {
         state.databitlen = 0
-        state.datasize_in_buffer = 0
+        state.datasizeInBuffer = 0
 
         /*initialize the initial hash value of JH*/
         state.hashbitlen = hashbitlen
@@ -258,7 +258,7 @@ object JH {
         }
         //memcpy(state->x,JH256_H0,128)
     }
-    private fun Update(state: JHHashState, data: UBytePointer, databitlen_: ULong)
+    private fun update(state: JHHashState, data: UBytePointer, databitlen_: ULong)
     {
         var databitlen = databitlen_.toInt()
         var index = 0 /*the starting address of the data to be compressed*/
@@ -269,26 +269,26 @@ object JH {
         /*we assume that the size of the data in the buffer is the multiple of 8 bits if it is not at the end of a message*/
 
         /*There is data in the buffer, but the incoming data is insufficient for a full block*/
-        if ( (state.datasize_in_buffer > 0 ) && (( state.datasize_in_buffer + databitlen) < 512)  ) {
+        if ( (state.datasizeInBuffer > 0 ) && (( state.datasizeInBuffer + databitlen) < 512)  ) {
             if ( (databitlen and 7) == 0 ) {
-                state.buffer[state.datasize_in_buffer shr 3] = data[0, 64-(state.datasize_in_buffer shr 3)]
-                //memcpy(state->buffer + (state->datasize_in_buffer >> 3), data, 64-(state->datasize_in_buffer >> 3)) ;
+                state.buffer[state.datasizeInBuffer shr 3] = data[0, 64-(state.datasizeInBuffer shr 3)]
+                //memcpy(state->buffer + (state->datasizeInBuffer >> 3), data, 64-(state->datasizeInBuffer >> 3)) ;
             }else{
-                state.buffer[state.datasize_in_buffer shr 3] = data[0, 64-(state.datasize_in_buffer shr 3) + 1]
-                //memcpy(state->buffer + (state->datasize_in_buffer >> 3), data, 64-(state->datasize_in_buffer >> 3)+1) ;
+                state.buffer[state.datasizeInBuffer shr 3] = data[0, 64-(state.datasizeInBuffer shr 3) + 1]
+                //memcpy(state->buffer + (state->datasizeInBuffer >> 3), data, 64-(state->datasizeInBuffer >> 3)+1) ;
             }
-            state.datasize_in_buffer += databitlen
+            state.datasizeInBuffer += databitlen
             databitlen = 0
         }
 
         /*There is data in the buffer, and the incoming data is sufficient for a full block*/
-        if ( (state.datasize_in_buffer > 0 ) && (( state.datasize_in_buffer + databitlen) >= 512)  ) {
-            state.buffer[state.datasize_in_buffer shr 3] = data[0, 64-(state.datasize_in_buffer shr 3)]
-            //memcpy( state->buffer + (state->datasize_in_buffer >> 3), data, 64-(state->datasize_in_buffer >> 3) ) ;
-            index = 64-(state.datasize_in_buffer shr 3)
-            databitlen -= (512 - state.datasize_in_buffer)
+        if ( (state.datasizeInBuffer > 0 ) && (( state.datasizeInBuffer + databitlen) >= 512)  ) {
+            state.buffer[state.datasizeInBuffer shr 3] = data[0, 64-(state.datasizeInBuffer shr 3)]
+            //memcpy( state->buffer + (state->datasizeInBuffer >> 3), data, 64-(state->datasizeInBuffer >> 3) ) ;
+            index = 64-(state.datasizeInBuffer shr 3)
+            databitlen -= (512 - state.datasizeInBuffer)
             F8(state)
-            state.datasize_in_buffer = 0
+            state.datasizeInBuffer = 0
         }
 
         /*hash the remaining full message blocks*/
@@ -309,11 +309,11 @@ object JH {
                 state.buffer[0] = data[index, ((databitlen and 0x1ff) shr 3) + 1]
                 //memcpy(state->buffer, data+index, ((databitlen & 0x1ff) >> 3)+1);
             }
-            state.datasize_in_buffer = databitlen
+            state.datasizeInBuffer = databitlen
         }
     }
 
-    private fun Final(state: JHHashState, hashval: UBytePointer)
+    private fun final(state: JHHashState, hashval: UBytePointer)
     {
         if ( (state.databitlen and 0x1ff) == 0 ) {
             /*pad the message when databitlen is multiple of 512 bits, then process the padded block*/
@@ -333,7 +333,7 @@ object JH {
         }else {
             /*set the rest of the bytes in the buffer to 0*/
 
-            if ( (state.datasize_in_buffer and 7) == 0){
+            if ( (state.datasizeInBuffer and 7) == 0){
                 for (i in (state.databitlen and 0x1ff) shr 3 until 64)
                     state.buffer[i] = 0u
             }else{
@@ -365,15 +365,15 @@ object JH {
         //memcpy(hashval,(unsigned char*)state->x+64+32,32);
     }
 
-    private fun jh_hash(hashbitlen: Int, data: UBytePointer, databitlen: Int, hashval: UBytePointer) {
+    private fun jhHash(hashbitlen: Int, data: UBytePointer, databitlen: Int, hashval: UBytePointer) {
         val state = JHHashState(0, databitlen, 0)
 
-        Init(state, hashbitlen)
-        Update(state, data, databitlen.toULong())
-        Final(state, hashval)
+        init(state, hashbitlen)
+        update(state, data, databitlen.toULong())
+        final(state, hashval)
     }
 
-    fun hash_extra_jh(data: UBytePointer, length: Int, hash: UBytePointer) {
-        jh_hash(32 * 8, data, 8 * length, hash)
+    fun hashExtraJH(data: UBytePointer, length: Int, hash: UBytePointer) {
+        jhHash(32 * 8, data, 8 * length, hash)
     }
 }

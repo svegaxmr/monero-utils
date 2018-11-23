@@ -18,7 +18,7 @@ class SkeinTest {
             val data = BinHexUtils.hexToByteArray(spl[1]).toUByteArray()
             val don = Scratchpad.getScratchpad(data.size)
             don[0] = data
-            Skein.hash_extra_skein(don.getPointer(0), data.size.toULong(), out.getPointer(0))
+            Skein.hashExtraSkein(don.getPointer(0), data.size.toULong(), out.getPointer(0))
             val get = BinHexUtils.binaryToHex(out[0, out.size].toByteArray())
             Assert.assertTrue("${spl[1]} fails: expect ${spl[0]}, get $get", get.equals(spl[0], ignoreCase = true))
         }

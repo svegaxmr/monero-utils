@@ -12,11 +12,6 @@ object Skein{
     const val SKEIN_512_STATE_WORDS = ( 8)
     val SKEIN_512_BLOCK_BYTES = ( 8*SKEIN_512_STATE_WORDS).toUInt()
 
-    private val SKEIN_RND_SPECIAL = (1000u)
-    val SKEIN_RND_KEY_INITIAL = (SKEIN_RND_SPECIAL+0u)
-    val SKEIN_RND_KEY_INJECT = (SKEIN_RND_SPECIAL+1u)
-    val SKEIN_RND_FEED_FWD = (SKEIN_RND_SPECIAL+2u)
-
     data class SkeinCtxHdrT(
             var hashBitLen: ULong,
             var bCnt: ULong,
@@ -29,10 +24,6 @@ object Skein{
             val b: UBytePointer = Scratchpad.getScratchpad(SKEIN_512_BLOCK_BYTES.toInt()).getPointer(0)
     )
 
-    const val SKEIN_TREE_HASH = (1)
-
-    private const val SKEIN_T1_POS_TREE_LVL = 112 - 64   /* bits 112..118: level in hash tree   */
-    private const val SKEIN_T1_POS_BIT_PAD = 119 - 64   /* bit  119 : partial final input byte */
     private const val SKEIN_T1_POS_BLK_TYPE = 120 - 64   /* bits 120..125: type field   */
     private const val SKEIN_T1_POS_FIRST = 126 - 64   /* bits 126 : first block flag */
     private const val SKEIN_T1_POS_FINAL = 127 - 64   /* bit  127 : final block flag */
@@ -40,86 +31,29 @@ object Skein{
     /* tweak word T[1]: flag bit definition(s) */
     private val SKEIN_T1_FLAG_FIRST = ((1uL ) shl SKEIN_T1_POS_FIRST)
     private val SKEIN_T1_FLAG_FINAL = ((1uL ) shl SKEIN_T1_POS_FINAL)
-    private val SKEIN_T1_FLAG_BIT_PAD = ((1uL ) shl SKEIN_T1_POS_BIT_PAD)
-
-    /* tweak word T[1]: tree level bit field mask */
-    val SKEIN_T1_TREE_LVL_MASK = ((0x7FuL) shl SKEIN_T1_POS_TREE_LVL)
-
-    /* tweak word T[1]: block type field */
-    private const val SKEIN_BLK_TYPE_KEY = ( 0)/* key, for MAC and KDF */
-    private const val SKEIN_BLK_TYPE_CFG = ( 4)/* configuration block */
-    private const val SKEIN_BLK_TYPE_PERS = ( 8)/* personalization string */
-    private const val SKEIN_BLK_TYPE_PK = (12)/* public key (for digital signature hashing) */
-    private const val SKEIN_BLK_TYPE_KDF = (16)/* key identifier for KDF */
-    private const val SKEIN_BLK_TYPE_NONCE = (20)/* nonce for PRNG */
     private const val SKEIN_BLK_TYPE_MSG = (48)/* message processing */
     private const val SKEIN_BLK_TYPE_OUT = (63)/* output stage */
-    private const val SKEIN_BLK_TYPE_MASK = (63)/* bit field mask */
-
-    //#define SKEIN_T1_BLK_TYPE(T)   (((u64b_t) (SKEIN_BLK_TYPE_##T)) shl SKEIN_T1_POS_BLK_TYPE)
-    val SKEIN_T1_BLK_TYPE_KEY = SKEIN_BLK_TYPE_KEY.toULong()  /* key, for MAC and KDF */
-    private val SKEIN_T1_BLK_TYPE_CFG = SKEIN_BLK_TYPE_CFG.toULong() shl SKEIN_T1_POS_BLK_TYPE  /* configuration block */
-    val SKEIN_T1_BLK_TYPE_PERS = SKEIN_BLK_TYPE_PERS.toULong() /* personalization string */
-    val SKEIN_T1_BLK_TYPE_PK = SKEIN_BLK_TYPE_PK.toULong()   /* public key (for digital signature hashing) */
-    val SKEIN_T1_BLK_TYPE_KDF = SKEIN_BLK_TYPE_KDF.toULong()  /* key identifier for KDF */
-    val SKEIN_T1_BLK_TYPE_NONCE = SKEIN_BLK_TYPE_NONCE.toULong()/* nonce for PRNG */
     private val SKEIN_T1_BLK_TYPE_MSG = SKEIN_BLK_TYPE_MSG.toULong() shl SKEIN_T1_POS_BLK_TYPE  /* message processing */
     private val SKEIN_T1_BLK_TYPE_OUT = SKEIN_BLK_TYPE_OUT.toULong() shl SKEIN_T1_POS_BLK_TYPE  /* output stage */
-    val SKEIN_T1_BLK_TYPE_MASK = SKEIN_BLK_TYPE_MASK.toULong() /* field bit mask */
-
-    private fun SKEIN_T1_TREE_LEVEL(n: ULong) = n shl SKEIN_T1_POS_TREE_LVL
-
-    val SKEIN_T1_BLK_TYPE_CFG_FINAL = (SKEIN_T1_BLK_TYPE_CFG or SKEIN_T1_FLAG_FINAL)
     private val SKEIN_T1_BLK_TYPE_OUT_FINAL = (SKEIN_T1_BLK_TYPE_OUT or SKEIN_T1_FLAG_FINAL)
 
-    private val SKEIN_VERSION: UInt = (1u)
-
-    val SKEIN_ID_STRING_LE: UInt = (0x33414853u)/* "SHA3" (little-endian)*/
-
-    const val SKEIN_CFG_STR_LEN = (4*8)
-
-    /* bit field definitions in config block treeInfo word */
-    private const val SKEIN_CFG_TREE_LEAF_SIZE_POS = ( 0)
-    private const val SKEIN_CFG_TREE_NODE_SIZE_POS = ( 8)
-    private const val SKEIN_CFG_TREE_MAX_LEVEL_POS = (16)
-
-    val SKEIN_CFG_TREE_LEAF_SIZE_MSK = ((0xFFuL) shl SKEIN_CFG_TREE_LEAF_SIZE_POS)
-    val SKEIN_CFG_TREE_NODE_SIZE_MSK = ((0xFFuL) shl SKEIN_CFG_TREE_NODE_SIZE_POS)
-    val SKEIN_CFG_TREE_MAX_LEVEL_MSK = ((0xFFuL) shl SKEIN_CFG_TREE_MAX_LEVEL_POS)
-
     private fun SKEIN_MK_64(hi32: UInt, lo32: UInt) = ((lo32) + (hi32.toULong() shl 32))
-    val SKEIN_SCHEMA_VER =  SKEIN_MK_64(SKEIN_VERSION,SKEIN_ID_STRING_LE)
     private val SKEIN_KS_PARITY =  SKEIN_MK_64(0x1BD11BDAu,0xA9FC1A22u)
 
-    private fun SKEIN_CFG_TREE_INFO(leaf: ULong, node: ULong, maxLvl: ULong) =
-            ( (leaf shl SKEIN_CFG_TREE_LEAF_SIZE_POS) or
-                    (node shl SKEIN_CFG_TREE_NODE_SIZE_POS) or
-                    (maxLvl shl SKEIN_CFG_TREE_MAX_LEVEL_POS) )
+    private fun skeinSetTweak(ctxPtr: Skein512Ctx, TWK_NUM: Int, tVal: ULong){ctxPtr.h.T[TWK_NUM] = tVal}
 
-    val SKEIN_CFG_TREE_INFO_SEQUENTIAL = SKEIN_CFG_TREE_INFO(0u,0u,0u)
+    private fun skeinSetT0(ctxPtr: Skein512Ctx, T0: ULong) = skeinSetTweak(ctxPtr,0,T0)
+    private fun skeinSetT1(ctxPtr: Skein512Ctx, T1: ULong) = skeinSetTweak(ctxPtr,1,T1)
 
-    private fun Skein_Get_Tweak(ctxPtr: Skein512Ctx, TWK_NUM: Int) = (ctxPtr.h.T[TWK_NUM])
-    private fun Skein_Set_Tweak(ctxPtr: Skein512Ctx, TWK_NUM: Int, tVal: ULong){ctxPtr.h.T[TWK_NUM] = tVal}
-
-    fun Skein_Get_T0(ctxPtr: Skein512Ctx) = Skein_Get_Tweak(ctxPtr,0)
-    fun Skein_Get_T1(ctxPtr: Skein512Ctx) = Skein_Get_Tweak(ctxPtr,1)
-    private fun Skein_Set_T0(ctxPtr: Skein512Ctx, T0: ULong) = Skein_Set_Tweak(ctxPtr,0,T0)
-    private fun Skein_Set_T1(ctxPtr: Skein512Ctx, T1: ULong) = Skein_Set_Tweak(ctxPtr,1,T1)
-
-    private fun Skein_Set_T0_T1(ctxPtr: Skein512Ctx, T0: ULong, T1: ULong){
-        Skein_Set_T0(ctxPtr, T0)
-        Skein_Set_T1(ctxPtr, T1)
+    private fun skeinSetT0T1(ctxPtr: Skein512Ctx, T0: ULong, T1: ULong){
+        skeinSetT0(ctxPtr, T0)
+        skeinSetT1(ctxPtr, T1)
     }
 
-    private fun Skein_Start_New_Type(ctxPtr: Skein512Ctx, BLK_TYPE: ULong){
-        Skein_Set_T0_T1(ctxPtr,0u, SKEIN_T1_FLAG_FIRST or BLK_TYPE)
+    private fun skeinStartNewType(ctxPtr: Skein512Ctx, BLK_TYPE: ULong){
+        skeinSetT0T1(ctxPtr,0u, SKEIN_T1_FLAG_FIRST or BLK_TYPE)
         ctxPtr.h.bCnt=0u
     }
-
-    fun Skein_Clear_First_Flag(hdr: SkeinCtxHdrT){hdr.T[1] = hdr.T[1] and SKEIN_T1_FLAG_FIRST.inv()}
-    fun Skein_Set_Bit_Pad_Flag(hdr: SkeinCtxHdrT){hdr.T[1] = hdr.T[1] or SKEIN_T1_FLAG_BIT_PAD}
-
-    fun Skein_Set_Tree_Level(hdr: SkeinCtxHdrT, height: ULong){hdr.T[1] = hdr.T[1] or SKEIN_T1_TREE_LEVEL(height)}
 
     /* Skein_512 round rotation constants */
     private const val R_512_0_0=46
@@ -162,19 +96,17 @@ object Skein{
     private const val R_512_7_2=56
     private const val R_512_7_3=22
 
-    const val SKEIN_512_ROUNDS_TOTAL = 72
+    private fun MK64(hi32: UInt, lo32: UInt) = SKEIN_MK_64(hi32, lo32)
 
-    private fun MK_64(hi32: UInt, lo32: UInt) = SKEIN_MK_64(hi32, lo32)
-
-    val SKEIN_512_IV_256 = ulongArrayOf(
-            MK_64(0xCCD044A1u,0x2FDB3E13u),
-            MK_64(0xE8359030u,0x1A79A9EBu),
-            MK_64(0x55AEA061u,0x4F816E6Fu),
-            MK_64(0x2A2767A4u,0xAE9B94DBu),
-            MK_64(0xEC06025Eu,0x74DD7683u),
-            MK_64(0xE7A436CDu,0xC4746251u),
-            MK_64(0xC36FBAF9u,0x393AD185u),
-            MK_64(0x3EEDBA18u,0x33EDFC13u)
+    private val SKEIN_512_IV_256 = ulongArrayOf(
+            MK64(0xCCD044A1u,0x2FDB3E13u),
+            MK64(0xE8359030u,0x1A79A9EBu),
+            MK64(0x55AEA061u,0x4F816E6Fu),
+            MK64(0x2A2767A4u,0xAE9B94DBu),
+            MK64(0xEC06025Eu,0x74DD7683u),
+            MK64(0xE7A436CDu,0xC4746251u),
+            MK64(0xC36FBAF9u,0x393AD185u),
+            MK64(0x3EEDBA18u,0x33EDFC13u)
     )
 
     /*
@@ -185,7 +117,7 @@ object Skein{
     #define ts              (kw + KW_TWK_BASE)
      */
 
-    private fun Skein_512_Init(ctx: Skein512Ctx, hashBitLen: Int) {
+    private fun skein512Init(ctx: Skein512Ctx, hashBitLen: Int) {
         ctx.h.hashBitLen = hashBitLen.toULong()         /* output hash bit count */
 
         for(i in 0 until SKEIN_512_IV_256.size){
@@ -196,11 +128,11 @@ object Skein{
 
         /* The chaining vars ctx->X are now initialized for the given hashBitLen. */
         /* Set up to process the data message portion of the hash (default) */
-        //Skein_Start_New_Type(ctx,MSG);              /* T0=0, T1= MSG type */
-        Skein_Start_New_Type(ctx, SKEIN_T1_BLK_TYPE_MSG)
+        //skeinStartNewType(ctx,MSG);              /* T0=0, T1= MSG type */
+        skeinStartNewType(ctx, SKEIN_T1_BLK_TYPE_MSG)
     }
 
-    private fun Skein_512_Update(ctx: Skein512Ctx, msg_: UBytePointer, msgByteCnt_: ULong){
+    private fun skein512Update(ctx: Skein512Ctx, msg_: UBytePointer, msgByteCnt_: ULong){
         var msg = msg_
         var msgByteCnt = msgByteCnt_
         var n: ULong
@@ -216,13 +148,13 @@ object Skein{
                     msg = (msg + n.toInt()).toUBytePointer()
                     ctx.h.bCnt += n
                 }
-                Skein_512_Process_Block(ctx,ctx.b,1u,SKEIN_512_BLOCK_BYTES.toULong())
+                skein512ProcessBlock(ctx,ctx.b,1u,SKEIN_512_BLOCK_BYTES.toULong())
                 ctx.h.bCnt = 0uL
             }
             /* now process any remaining full blocks, directly from input message data */
             if (msgByteCnt > SKEIN_512_BLOCK_BYTES){
                 n = ((msgByteCnt-1u) / SKEIN_512_BLOCK_BYTES).toULong()   /* number of full blocks to process */
-                Skein_512_Process_Block(ctx,msg,n,SKEIN_512_BLOCK_BYTES.toULong())
+                skein512ProcessBlock(ctx,msg,n,SKEIN_512_BLOCK_BYTES.toULong())
                 msgByteCnt -= (n * SKEIN_512_BLOCK_BYTES)
                 msg = (msg + (n * SKEIN_512_BLOCK_BYTES).toInt()).toUBytePointer()
             }
@@ -236,7 +168,7 @@ object Skein{
         }
     }
 
-    private fun Skein_512_Process_Block(ctx: Skein512Ctx, blkPtr_: UBytePointer, blkCnt_: ULong, byteCntAdd: ULong) { /* do it in C */
+    private fun skein512ProcessBlock(ctx: Skein512Ctx, blkPtr_: UBytePointer, blkCnt_: ULong, byteCntAdd: ULong) { /* do it in C */
         var blkPtr = blkPtr_
         var blkCnt = blkCnt_
         val WCNT = SKEIN_512_STATE_WORDS
@@ -276,7 +208,7 @@ object Skein{
 
             ts[2] = ts[0] xor ts[1]
 
-            Skein_Get64_LSB_First(w, blkPtr, WCNT) /* get input block in little-endian format */
+            skeinGet64LSBFirst(w, blkPtr, WCNT) /* get input block in little-endian format */
 
             X0 = w[0] + ks[0]                    /* do the first full key injection */
             X1 = w[1] + ks[1]
@@ -416,8 +348,8 @@ object Skein{
         ctx.h.T[1] = ts[1]
     }
 
-    private fun Skein_512_Final(ctx: Skein512Ctx, hashval: UBytePointer){
-        var n = 0uL
+    private fun skein512Final(ctx: Skein512Ctx, hashval: UBytePointer){
+        var n: ULong
 
         val X = ULongArray(SKEIN_512_STATE_WORDS)
         ctx.h.T[1] = ctx.h.T[1] or SKEIN_T1_FLAG_FINAL
@@ -426,7 +358,7 @@ object Skein{
             //memset(& ctx . b [ctx.h.bCnt], 0, SKEIN_512_BLOCK_BYTES-ctx.h.bCnt);
         }
 
-        Skein_512_Process_Block(ctx, ctx.b, 1u, ctx.h.bCnt)  /* process the final block */
+        skein512ProcessBlock(ctx, ctx.b, 1u, ctx.h.bCnt)  /* process the final block */
 
         /* now output the result */
         val byteCnt = (ctx.h.hashBitLen + 7u) shr 3
@@ -441,12 +373,12 @@ object Skein{
         var i = 0u
         while ((i * SKEIN_512_BLOCK_BYTES) < byteCnt) {
             ctx.b.toULongPointer()[0] = i.toULong()
-            Skein_Start_New_Type(ctx, SKEIN_T1_BLK_TYPE_OUT_FINAL)
-            Skein_512_Process_Block(ctx,ctx.b,1u,8u) /* run "counter mode" */
+            skeinStartNewType(ctx, SKEIN_T1_BLK_TYPE_OUT_FINAL)
+            skein512ProcessBlock(ctx,ctx.b,1u,8u) /* run "counter mode" */
             n = (byteCnt - i.toUInt() * SKEIN_512_BLOCK_BYTES.toUInt())
             if (n >= SKEIN_512_BLOCK_BYTES.toUInt())
                 n  = SKEIN_512_BLOCK_BYTES.toULong()
-            Skein_Put64_LSB_First((hashval+(i*SKEIN_512_BLOCK_BYTES).toInt()).toUBytePointer(),ctx.X,n.toInt())   /* "output" the ctr mode bytes */
+            skeinPut64LSBFirst((hashval+(i*SKEIN_512_BLOCK_BYTES).toInt()).toUBytePointer(),ctx.X,n.toInt())   /* "output" the ctr mode bytes */
 
             for(s in 0 until X.size){
                 ctx.X[s] = X[s]
@@ -455,36 +387,36 @@ object Skein{
         }
     }
 
-    private fun Skein_Put64_LSB_First(dst08: UBytePointer, src64: ULongPointer, bCnt: Int){
+    private fun skeinPut64LSBFirst(dst08: UBytePointer, src64: ULongPointer, bCnt: Int){
         dst08[0] = src64.toUBytePointer()[0, bCnt]
     }
 
-    private fun Skein_Get64_LSB_First(dst64: ULongPointer, src08: UBytePointer, wCnt: Int){
+    private fun skeinGet64LSBFirst(dst64: ULongPointer, src08: UBytePointer, wCnt: Int){
         dst64.toUBytePointer()[0] = src08[0, 8*wCnt]
     }
 
-    private fun Init(state: SkeinHashState, hashbitlen: Int) {
+    private fun init(state: SkeinHashState, hashbitlen: Int) {
         state.statebits = 64 * SKEIN_512_STATE_WORDS
-        Skein_512_Init(state.ctx_512, hashbitlen)
+        skein512Init(state.ctx_512, hashbitlen)
     }
 
-    private fun Update(state: SkeinHashState, data: UBytePointer, databitlen: ULong) {
-        Skein_512_Update(state.ctx_512, data, databitlen shr 3)
+    private fun update(state: SkeinHashState, data: UBytePointer, databitlen: ULong) {
+        skein512Update(state.ctx_512, data, databitlen shr 3)
     }
 
-    private fun Final(state: SkeinHashState, hashval: UBytePointer){
-        Skein_512_Final(state.ctx_512, hashval)
+    private fun final(state: SkeinHashState, hashval: UBytePointer){
+        skein512Final(state.ctx_512, hashval)
     }
 
-    private fun skein_hash(hashbitlen: Int, data: UBytePointer, /* all-in-one call */
+    private fun skeinHash(hashbitlen: Int, data: UBytePointer, /* all-in-one call */
                    databitlen: ULong, hashval: UBytePointer) {
         val state = SkeinHashState()
-        Init(state, hashbitlen)
-        Update(state, data, databitlen)
-        Final(state, hashval)
+        init(state, hashbitlen)
+        update(state, data, databitlen)
+        final(state, hashval)
     }
 
-    fun hash_extra_skein(data: UBytePointer, length: ULong, hash: UBytePointer) {
-        skein_hash(256, data, 8u * length, hash)
+    fun hashExtraSkein(data: UBytePointer, length: ULong, hash: UBytePointer) {
+        skeinHash(256, data, 8u * length, hash)
     }
 }

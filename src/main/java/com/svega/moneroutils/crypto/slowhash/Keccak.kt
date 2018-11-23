@@ -3,7 +3,7 @@ package com.svega.moneroutils.crypto.slowhash
 @ExperimentalUnsignedTypes
 object Keccak {
 
-    private val keccakf_rndc =
+    private val keccakfRndc =
             ulongArrayOf(
                     0x0000000000000001u, 0x0000000000008082u, 0x800000000000808au,
                     0x8000000080008000u, 0x000000000000808bu, 0x0000000080000001u,
@@ -15,13 +15,13 @@ object Keccak {
                     0x8000000000008080u, 0x0000000080000001u, 0x8000000080008008u
             )
 
-    private val keccakf_rotc =
+    private val keccakfRotc =
             intArrayOf(
                     1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
                     27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
             )
 
-    private val keccakf_piln =
+    private val keccakfPiln =
             intArrayOf(
                     10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
                     15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
@@ -60,9 +60,9 @@ object Keccak {
             t = st[1]
             i = 0
             while (i < 24) {
-                j = keccakf_piln[i]
+                j = keccakfPiln[i]
                 bc[0] = st[j]
-                st[j] = ROTL64(t, keccakf_rotc[i])
+                st[j] = ROTL64(t, keccakfRotc[i])
                 t = bc[0]
                 i++
             }
@@ -84,7 +84,7 @@ object Keccak {
             }
 
             //  Iota
-            st[0] = st[0] xor keccakf_rndc[round]
+            st[0] = st[0] xor keccakfRndc[round]
             round++
         }
     }

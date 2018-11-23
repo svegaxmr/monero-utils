@@ -7,10 +7,10 @@ object OAES {
     private const val OAES_COL_LEN = 4
     private const val OAES_ROUND_BASE = 7
 
-    private val oaes_gf_8 = ubyteArrayOf(
+    private val oaesGF8 = ubyteArrayOf(
             0x01u, 0x02u, 0x04u, 0x08u, 0x10u, 0x20u, 0x40u, 0x80u, 0x1bu, 0x36u)
 
-    private val oaes_sub_byte_value = Array(16) {
+    private val oaesSubByteValue = Array(16) {
         when (it) {
             // 		0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    a,    b,    c,    d,    e,    f,
             0x00 -> ubyteArrayOf( 0x63u, 0x7cu, 0x77u, 0x7bu, 0xf2u, 0x6bu, 0x6fu, 0xc5u, 0x30u, 0x01u, 0x67u, 0x2bu, 0xfeu, 0xd7u, 0xabu, 0x76u)
@@ -32,16 +32,16 @@ object OAES {
         }
     }
 
-    private fun oaes_sub_byte(array: UByteArray, off: Int){
+    private fun oaesSubByte(array: UByteArray, off: Int){
         var _x = array[off].toInt()
         var _y = _x
         _x = _x and 0x0f
         _y = _y and 0xf0
         _y = _y shr 4
-        array[off] = oaes_sub_byte_value[_y][_x]
+        array[off] = oaesSubByteValue[_y][_x]
     }
 
-    private fun oaes_word_rot_left(array: UByteArray)
+    private fun oaesWordRotLeft(array: UByteArray)
     {
         val _temp = UByteArray(OAES_COL_LEN)
 
@@ -50,7 +50,7 @@ object OAES {
         _temp.copyInto(array, 0)
     }
 
-    private fun oaes_key_destroy(key: OAESKey)
+    private fun oaesKeyDestroy(key: OAESKey)
     {
         if(key.data.isNotEmpty()) {
             nixBuffer(key.data)
@@ -60,7 +60,7 @@ object OAES {
         key.keyBase = 0
     }
 
-    private fun oaes_key_expand(ctx: OAESContext)
+    private fun oaesKeyExpand(ctx: OAESContext)
     {
         ctx.key.keyBase = ctx.key.data.size / OAES_RKEY_LEN
         ctx.key.numKeys =  ctx.key.keyBase + OAES_ROUND_BASE
@@ -78,17 +78,17 @@ object OAES {
 
             if( 0 == (_i % ctx.key.keyBase) )
             {
-                oaes_word_rot_left( temp )
+                oaesWordRotLeft( temp )
 
                 for( _j in 0 until OAES_COL_LEN)
-                oaes_sub_byte( temp, _j )
+                oaesSubByte( temp, _j )
 
-                temp[0] = temp[0] xor oaes_gf_8[ _i / ctx.key.keyBase - 1 ]
+                temp[0] = temp[0] xor oaesGF8[ _i / ctx.key.keyBase - 1 ]
             }
             else if( ctx.key.keyBase > 6 && 4 == _i % ctx.key.keyBase )
             {
                 for( _j in 0 until OAES_COL_LEN)
-                oaes_sub_byte( temp, _j )
+                oaesSubByte( temp, _j )
             }
 
             for( _j in 0 until OAES_COL_LEN)
@@ -100,19 +100,19 @@ object OAES {
         }
     }
 
-    fun oaes_key_import_data(ctx: OAESContext, data: UByteArray)
+    fun oaesKeyImportData(ctx: OAESContext, data: UByteArray)
     {
         if(ctx.key.data.isNotEmpty())
-            oaes_key_destroy(ctx.key)
+            oaesKeyDestroy(ctx.key)
 
         ctx.key = OAESKey(data, Scratchpad.getScratchpad(0).getPointer(0), 0, 0)
 
-        oaes_key_expand( ctx )
+        oaesKeyExpand( ctx )
     }
 
     private fun nixBuffer(data: UByteArray) = UByteArray(data.size).copyInto(data)
 
-    fun oaes_alloc() = OAESContext(OAESKey(UByteArray(0), Scratchpad.getScratchpad(0).getPointer(0), 0, 0))
+    fun oaesAlloc() = OAESContext(OAESKey(UByteArray(0), Scratchpad.getScratchpad(0).getPointer(0), 0, 0))
 }
 
 @ExperimentalUnsignedTypes

@@ -1,7 +1,7 @@
 package com.svega.moneroutils.crypto.slowhash
 
 import com.svega.moneroutils.BinHexUtils
-import com.svega.moneroutils.crypto.slowhash.AESB.aesb_single_round
+import com.svega.moneroutils.crypto.slowhash.AESB.aesbSingleRound
 import com.svega.moneroutils.crypto.slowhash.IntUtils.mul128
 import com.svega.moneroutils.crypto.slowhash.SlowHash.INIT_SIZE_BYTE
 import com.svega.moneroutils.crypto.slowhash.SlowHash.cnSlowHash
@@ -19,8 +19,8 @@ object SlowHash {
     private val extra_hashes = Array(4) { { x: Scratchpad, y: Int, z: UBytePointer -> when(it) {
         0 -> Blake.blake256Hash(z, x.getPointer(0), y.toULong())
         1 -> Groestl.groestl256Hash(z, x.getPointer(0), y.toULong())
-        2 -> JH.hash_extra_jh(x.getPointer(0), y, z)
-        else -> Skein.hash_extra_skein(x.getPointer(0), y.toULong(), z)
+        2 -> JH.hashExtraJH(x.getPointer(0), y, z)
+        else -> Skein.hashExtraSkein(x.getPointer(0), y.toULong(), z)
     }
     }}
 
@@ -77,7 +77,7 @@ object SlowHash {
         val c1i = c1.toUIntPointer()
         val c1l = c1.toULongPointer()
         val dl = d.toULongPointer()
-        val oaesCtx = OAES.oaes_alloc()
+        val oaesCtx = OAES.oaesAlloc()
 
         val spz = if(variant == 1) UByteArrayScratchpad(data.size) else Scratchpad.getScratchpad(data.size)//needed for tweak1_2 pointing at 35
         spz[0] = data
@@ -85,7 +85,7 @@ object SlowHash {
 
         text[0] = state.init[0, INIT_SIZE_BYTE]
 
-        OAES.oaes_key_import_data(oaesCtx, state.b[0, AES_KEY_SIZE])
+        OAES.oaesKeyImportData(oaesCtx, state.b[0, AES_KEY_SIZE])
 
         val tweak1_2 = when {
                 variant != 1 -> 0uL
@@ -106,7 +106,7 @@ object SlowHash {
         for (i in 0 until MEMORY / INIT_SIZE_BYTE) {
             tpj.offset = 0
             for (j in 0 until INIT_SIZE_BLK) {
-                AESB.aesb_pseudo_round(tpj, tpj, oaesCtx.key.expData)
+                AESB.aesbPseudoRound(tpj, tpj, oaesCtx.key.expData)
                 tpj.offset += AES_BLOCK_SIZE
             }
             long_state[i * INIT_SIZE_BYTE] = text.getRawArray()
@@ -121,7 +121,7 @@ object SlowHash {
 
         for (i in 0 until ITER / 2) {
             lsp.offset = state_index(au)
-            aesb_single_round(lsp, lsp, a)
+            aesbSingleRound(lsp, lsp, a)
             copyBlock(c1, lsp)
 
             val oldOff1 = lsp.offset
@@ -185,13 +185,13 @@ object SlowHash {
         }
 
         text[0] = state.init[0, INIT_SIZE_BYTE]
-        OAES.oaes_key_import_data(oaesCtx, state.b[32, AES_KEY_SIZE])
+        OAES.oaesKeyImportData(oaesCtx, state.b[32, AES_KEY_SIZE])
         lsp.offset = 0
         for (i in 0 until MEMORY / INIT_SIZE_BYTE) {
             tpj.offset = 0
             for (j in 0 until INIT_SIZE_BLK) {
                 xor16(tpj, lsp)
-                AESB.aesb_pseudo_round(tpj, tpj, oaesCtx.key.expData)
+                AESB.aesbPseudoRound(tpj, tpj, oaesCtx.key.expData)
                 tpj.offset += AES_BLOCK_SIZE
                 lsp.offset += AES_BLOCK_SIZE
             }
@@ -205,8 +205,8 @@ object SlowHash {
         println("Using hash function ${when(state.b[0].toInt() and 3){
             0 -> "hash_extra_blake"
             1 -> "hash_extra_groestl"
-            2 -> "hash_extra_jh"
-            else -> "hash_extra_skein"
+            2 -> "hashExtraJH"
+            else -> "hashExtraSkein"
         }}")
         extra_hashes[state.b[0].toInt() and 3](state.state, 200, sp.getPointer(0))
         sp.getRawArray().copyInto(hash)

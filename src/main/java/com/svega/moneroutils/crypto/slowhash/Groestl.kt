@@ -37,10 +37,10 @@ object Groestl {
             0xc35edc82u, 0x82c31f5eu, 0xb0cbe229u, 0x29b052cbu, 0x7799c35au, 0x5a77b499u, 0x11332d1eu, 0x1e113c33u, 0xcb463d7bu, 0x7bcbf646u, 0xfc1fb7a8u, 0xa8fc4b1fu, 0xd6610c6du, 0x6dd6da61u, 0x3a4e622cu, 0x2c3a584eu)
 
     private const val ROWS = 8
-    private val LENGTHFIELDLEN = ROWS
+    private const val LENGTHFIELDLEN = ROWS
     private const val COLS512 = 8
 
-    val SIZE512 = (ROWS*COLS512)
+    const val SIZE512 = (ROWS*COLS512)
 
     private const val HASH_BIT_LEN = 256
 
@@ -58,37 +58,33 @@ object Groestl {
     val indices_cyclic= ubyteArrayOf(0u,1u,2u,3u,4u,5u,6u,7u,0u,1u,2u,3u,4u,5u,6u)
 
     private fun COLUMN(x: UBytePointer, y: UIntPointer, i: Int, c0: Int, c1: Int, c2: Int, c3: Int, c4: Int, c5: Int, c6: Int, c7: Int){
-        var tv1 = 0u
-        var tv2 = 0u
-        var tu = 0u
-        var tl = 0u
-        var t = 0u
-        tu = T[(2u * x[4*c0+0]).toInt()]
-        tl = T[(2u * x[4*c0+0]+1u).toInt()]
-        tv1 = T[(2u * x[4*c1+1]).toInt()]
-        tv2 = T[(2u * x[4*c1+1]+1u).toInt()]
+        var tv1 = T[(2u * x[4*c1+1]).toInt()]
+        var tv2 = T[(2u * x[4*c1+1]+1u).toInt()]
+        var tu = T[(2u * x[4*c0+0]).toInt()]
+        var tl = T[(2u * x[4*c0+0]+1u).toInt()]
+        var t: UInt
         //ROTATE_COLUMN_DOWN(tv1,tv2,1,t)
-        var amount_bytes = 1
-        t = (tv1 shl (8 * amount_bytes)) or (tv2 shr (8 * (4 - amount_bytes)))
-        tv2 = (tv2 shl (8 * amount_bytes)) or (tv1 shr (8 * (4 - amount_bytes)))
+        var amountBytes = 1
+        t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
+        tv2 = (tv2 shl (8 * amountBytes)) or (tv1 shr (8 * (4 - amountBytes)))
         tv1 = t
         tu = tu xor tv1
         tl = tl xor tv2
         tv1 = T[(2u * x[4*c2+2]).toInt()]
         tv2 = T[(2u * x[4*c2+2]+1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,2,t)
-        amount_bytes = 2
-        t = (tv1 shl (8 * amount_bytes)) or (tv2 shr (8 * (4 - amount_bytes)))
-        tv2 = (tv2 shl (8 * amount_bytes)) or (tv1 shr (8 * (4 - amount_bytes)))
+        amountBytes = 2
+        t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
+        tv2 = (tv2 shl (8 * amountBytes)) or (tv1 shr (8 * (4 - amountBytes)))
         tv1 = t
         tu = tu xor tv1
         tl = tl xor tv2
         tv1 = T[(2u * x[4*c3+3]).toInt()]
         tv2 = T[(2u * x[4*c3+3]+1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,3,t)=
-        amount_bytes = 3
-        t = (tv1 shl (8 * amount_bytes)) or (tv2 shr (8 * (4 - amount_bytes)))
-        tv2 = (tv2 shl (8 * amount_bytes)) or (tv1 shr (8 * (4 - amount_bytes)))
+        amountBytes = 3
+        t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
+        tv2 = (tv2 shl (8 * amountBytes)) or (tv1 shr (8 * (4 - amountBytes)))
         tv1 = t
         tu = tu xor tv1
         tl = tl xor tv2
@@ -97,27 +93,27 @@ object Groestl {
         tv1 = T[(2u * x[4*c5+1]).toInt()]
         tv2 = T[(2u * x[4*c5+1]+1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,1,t)
-        amount_bytes = 1
-        t = (tv1 shl (8 * amount_bytes)) or (tv2 shr (8 * (4 - amount_bytes)))
-        tv2 = (tv2 shl (8 * amount_bytes)) or (tv1 shr (8 * (4 - amount_bytes)))
+        amountBytes = 1
+        t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
+        tv2 = (tv2 shl (8 * amountBytes)) or (tv1 shr (8 * (4 - amountBytes)))
         tv1 = t
         tl = tl xor tv1
         tu = tu xor tv2
         tv1 = T[(2u * x[4*c6+2]).toInt()]
         tv2 = T[(2u * x[4*c6+2]+1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,2,t)
-        amount_bytes = 2
-        t = (tv1 shl (8 * amount_bytes)) or (tv2 shr (8 * (4 - amount_bytes)))
-        tv2 = (tv2 shl (8 * amount_bytes)) or (tv1 shr (8 * (4 - amount_bytes)))
+        amountBytes = 2
+        t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
+        tv2 = (tv2 shl (8 * amountBytes)) or (tv1 shr (8 * (4 - amountBytes)))
         tv1 = t
         tl = tl xor tv1
         tu = tu xor tv2
         tv1 = T[(2u * x[4*c7+3]).toInt()]
         tv2 = T[(2u * x[4*c7+3]+1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,3,t)
-        amount_bytes = 3
-        t = (tv1 shl (8 * amount_bytes)) or (tv2 shr (8 * (4 - amount_bytes)))
-        tv2 = (tv2 shl (8 * amount_bytes)) or (tv1 shr (8 * (4 - amount_bytes)))
+        amountBytes = 3
+        t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
+        tv2 = (tv2 shl (8 * amountBytes)) or (tv1 shr (8 * (4 - amountBytes)))
         tv1 = t
         tl = tl xor tv1
         tu = tu xor tv2
@@ -125,58 +121,58 @@ object Groestl {
         y[i+1] = tl
     }
 
-    private fun  Init(ctx: GSHashState) {
+    private fun init(ctx: GSHashState) {
 
         /* set initial value */
         ctx.chaining[2*COLS512-1] = u32BIG(HASH_BIT_LEN.toUInt())
 
         /* set other variables */
-        ctx.buf_ptr = 0
-        ctx.block_counter1 = 0u
-        ctx.block_counter2 = 0u
-        ctx.bits_in_last_byte = 0
+        ctx.bufPtr = 0
+        ctx.blockCounter1 = 0u
+        ctx.blockCounter2 = 0u
+        ctx.bitsInLastByte = 0
     }
 
-    private fun Update(ctx: GSHashState, input: UBytePointer, databitlen: ULong) {
+    private fun update(ctx: GSHashState, input: UBytePointer, databitlen: ULong) {
         var index = 0
         val msglen = (databitlen/8u).toInt()
         val rem = (databitlen%8u).toInt()
 
         /* if the buffer contains data that has not yet been digested, first
            add data to buffer until full */
-        if (ctx.buf_ptr != 0) {
-            while (ctx.buf_ptr < SIZE512 && index < msglen) {
-                ctx.buffer[ctx.buf_ptr++] = input[index++]
+        if (ctx.bufPtr != 0) {
+            while (ctx.bufPtr < SIZE512 && index < msglen) {
+                ctx.buffer[ctx.bufPtr++] = input[index++]
             }
-            if (ctx.buf_ptr < SIZE512) {
+            if (ctx.bufPtr < SIZE512) {
                 /* buffer still not full, return */
                 if (rem != 0) {
-                    ctx.bits_in_last_byte = rem
-                    ctx.buffer[ctx.buf_ptr++] = input[index]
+                    ctx.bitsInLastByte = rem
+                    ctx.buffer[ctx.bufPtr++] = input[index]
                 }
                 return
             }
 
             /* digest buffer */
-            ctx.buf_ptr = 0
-            Transform(ctx, ctx.buffer, SIZE512)
+            ctx.bufPtr = 0
+            transform(ctx, ctx.buffer, SIZE512)
         }
 
         /* digest bulk of message */
-        Transform(ctx, (input+index).toUBytePointer(), msglen-index)
+        transform(ctx, (input+index).toUBytePointer(), msglen-index)
         index += ((msglen-index)/SIZE512)*SIZE512
 
         /* store remaining data in buffer */
         while (index < msglen) {
-            ctx.buffer[ctx.buf_ptr++] = input[index++]
+            ctx.buffer[ctx.bufPtr++] = input[index++]
         }
 
         /* if non-integral number of bytes have been supplied, store
            remaining bits in last byte, together with information about
            number of bits */
         if (rem != 0) {
-            ctx.bits_in_last_byte = rem
-            ctx.buffer[ctx.buf_ptr++] = input[index]
+            ctx.bitsInLastByte = rem
+            ctx.buffer[ctx.bufPtr++] = input[index]
         }
     }
 
@@ -229,7 +225,6 @@ object Groestl {
     }
 
     private fun F512(h: UIntPointer, m: UIntPointer) {
-        var i = 0u
         val Ptmp = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
         val Qtmp = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
         val y = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
@@ -270,23 +265,23 @@ object Groestl {
         }
     }
 
-    private fun Transform(ctx: GSHashState, input: UBytePointer, msglen: Int) {
-        var msglen = msglen
-        var input = input
+    private fun transform(ctx: GSHashState, input_: UBytePointer, msglen_: Int) {
+        var msglen = msglen_
+        var input = input_
         /* digest message, one block at a time */
         while (msglen >= SIZE512){
             F512(ctx.chaining, input.toUIntPointer())
 
             /* increment block counter */
-            ctx.block_counter1++
-            if (ctx.block_counter1 == 0u)
-                ctx.block_counter2++
+            ctx.blockCounter1++
+            if (ctx.blockCounter1 == 0u)
+                ctx.blockCounter2++
             msglen -= SIZE512
             input = (input + SIZE512).toUBytePointer()
         }
     }
 
-    private fun OutputTransformation(ctx: GSHashState) {
+    private fun outputTransformation(ctx: GSHashState) {
         val temp = Scratchpad.getScratchpad(4*2*COLS512).getPointer(0).toUIntPointer()
         val y = Scratchpad.getScratchpad(4*2*COLS512).getPointer(0).toUIntPointer()
         val z = Scratchpad.getScratchpad(4*2*COLS512).getPointer(0).toUIntPointer()
@@ -309,7 +304,7 @@ object Groestl {
         }
     }
 
-    private fun Final(ctx: GSHashState,
+    private fun final(ctx: GSHashState,
                       output: UBytePointer) {
         var i: Int
         var j = 0
@@ -317,44 +312,44 @@ object Groestl {
         val s = ctx.chaining.toUBytePointer()
 
         /* pad with '1'-bit and first few '0'-bits */
-        if (ctx.bits_in_last_byte != 0) {
-            ctx.buffer[ctx.buf_ptr - 1] = ctx.buffer[ctx.buf_ptr - 1] and ((1 shl ctx.bits_in_last_byte) - 1 shl 8 - ctx.bits_in_last_byte).toUByte()
-            ctx.buffer[ctx.buf_ptr - 1] = ctx.buffer[ctx.buf_ptr - 1] xor (0x1 shl 7 - ctx.bits_in_last_byte).toUByte()
-            ctx.bits_in_last_byte = 0
+        if (ctx.bitsInLastByte != 0) {
+            ctx.buffer[ctx.bufPtr - 1] = ctx.buffer[ctx.bufPtr - 1] and ((1 shl ctx.bitsInLastByte) - 1 shl 8 - ctx.bitsInLastByte).toUByte()
+            ctx.buffer[ctx.bufPtr - 1] = ctx.buffer[ctx.bufPtr - 1] xor (0x1 shl 7 - ctx.bitsInLastByte).toUByte()
+            ctx.bitsInLastByte = 0
         } else
-            ctx.buffer[ctx.buf_ptr++] = 0x80u
+            ctx.buffer[ctx.bufPtr++] = 0x80u
 
         /* pad with '0'-bits */
-        if (ctx.buf_ptr > SIZE512 - LENGTHFIELDLEN) {
+        if (ctx.bufPtr > SIZE512 - LENGTHFIELDLEN) {
             /* padding requires two blocks */
-            while (ctx.buf_ptr < SIZE512) {
-                ctx.buffer[ctx.buf_ptr++] = 0u
+            while (ctx.bufPtr < SIZE512) {
+                ctx.buffer[ctx.bufPtr++] = 0u
             }
             /* digest first padding block */
-            Transform(ctx, ctx.buffer, SIZE512)
-            ctx.buf_ptr = 0
+            transform(ctx, ctx.buffer, SIZE512)
+            ctx.bufPtr = 0
         }
-        while (ctx.buf_ptr < SIZE512 - LENGTHFIELDLEN) {
-            ctx.buffer[ctx.buf_ptr++] = 0u
+        while (ctx.bufPtr < SIZE512 - LENGTHFIELDLEN) {
+            ctx.buffer[ctx.bufPtr++] = 0u
         }
 
         /* length padding */
-        ctx.block_counter1++
-        if (ctx.block_counter1 == 0u) ctx.block_counter2++
-        ctx.buf_ptr = SIZE512
+        ctx.blockCounter1++
+        if (ctx.blockCounter1 == 0u) ctx.blockCounter2++
+        ctx.bufPtr = SIZE512
 
-        while (ctx.buf_ptr > SIZE512 - 4) {
-            ctx.buffer[--ctx.buf_ptr] = (ctx.block_counter1).toUByte()
-            ctx.block_counter1 = ctx.block_counter1 shr 8
+        while (ctx.bufPtr > SIZE512 - 4) {
+            ctx.buffer[--ctx.bufPtr] = (ctx.blockCounter1).toUByte()
+            ctx.blockCounter1 = ctx.blockCounter1 shr 8
         }
-        while (ctx.buf_ptr > SIZE512 - LENGTHFIELDLEN) {
-            ctx.buffer[--ctx.buf_ptr] = (ctx.block_counter2).toUByte()
-            ctx.block_counter2 = ctx.block_counter2 shr 8
+        while (ctx.bufPtr > SIZE512 - LENGTHFIELDLEN) {
+            ctx.buffer[--ctx.bufPtr] = (ctx.blockCounter2).toUByte()
+            ctx.blockCounter2 = ctx.blockCounter2 shr 8
         }
         /* digest final padding block */
-        Transform(ctx, ctx.buffer, SIZE512)
+        transform(ctx, ctx.buffer, SIZE512)
         /* perform output transformation */
-        OutputTransformation(ctx)
+        outputTransformation(ctx)
 
         /* store hash result in output */
         i = SIZE512 - hashbytelen
@@ -379,19 +374,19 @@ object Groestl {
 
     fun groestl256Hash(out: UBytePointer, din: UBytePointer, inlen: ULong) {
         val S = GSHashState()
-        Init(S)
-        Update(S, din, inlen * 8u)
-        Final(S, out)
+        init(S)
+        update(S, din, inlen * 8u)
+        final(S, out)
     }
 }
 
 @ExperimentalUnsignedTypes
 class GSHashState{
     val chaining = Scratchpad.getScratchpad(Groestl.SIZE512).getPointer(0).toUIntPointer()            /* actual state */
-    var block_counter1 = 0u
-    var block_counter2 = 0u
+    var blockCounter1 = 0u
+    var blockCounter2 = 0u
     val buffer = Scratchpad.getScratchpad(Groestl.SIZE512).getPointer(0)
-    var buf_ptr = 0              /* data buffer pointer */
-    var bits_in_last_byte = 0    /* no. of message bits in last byte of
+    var bufPtr = 0              /* data buffer pointer */
+    var bitsInLastByte = 0    /* no. of message bits in last byte of
 			       data buffer */
 }

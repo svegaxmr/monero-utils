@@ -128,7 +128,7 @@ object AESB {
                 t_fn[3][(x[(c + 3) % 4] shr 24).toInt() and 0xFF]
     }
 
-    inline fun aesb_single_round(pin: UBytePointer, pout: UBytePointer, expandedKey: UBytePointer)
+    inline fun aesbSingleRound(pin: UBytePointer, pout: UBytePointer, expandedKey: UBytePointer)
     {
         val b0 = UIntArray(4)
         val b1 = UIntArray(4)
@@ -170,7 +170,7 @@ object AESB {
     }
 
 
-    fun aesb_pseudo_round(pin: UBytePointer, pout: UBytePointer, expandedKey: UBytePointer)
+    fun aesbPseudoRound(pin: UBytePointer, pout: UBytePointer, expandedKey: UBytePointer)
     {
         val b0 = UIntArray(4)
         val b1 = UIntArray(4)
