@@ -27,3 +27,5 @@ bin/
 temp.txt
 
 target/
+.idea/uiDesigner.xml
+out.json
