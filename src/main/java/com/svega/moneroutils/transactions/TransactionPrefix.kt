@@ -11,6 +11,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 private val logger = KotlinLogging.logger {  }
+@ExperimentalUnsignedTypes
 class TransactionPrefix private constructor(): MoneroSerializable {
     var ver = -1
         private set
@@ -58,6 +59,7 @@ class TransactionPrefix private constructor(): MoneroSerializable {
         d.write(extra)
         return b.toByteArray()
     }
+    @ExperimentalUnsignedTypes
     companion object {
         fun parseFromBlob(bb: ByteBuffer): TransactionPrefix {
             val ret = TransactionPrefix()

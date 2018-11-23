@@ -11,6 +11,7 @@ import com.svega.moneroutils.SWAP32
 import com.svega.moneroutils.crypto.Hashing
 import com.svega.moneroutils.toByteArray
 
+@ExperimentalUnsignedTypes
 class MainAddress: MoneroAddress {
     constructor(address: String, net: NetType): super(address, net)
     constructor(key: FullKey, net: NetType, addrType: AddressType): super(key, net, addrType)

@@ -1,69 +1,76 @@
 package com.svega.moneroutils
 
-import com.svega.common.math.UInt8
-import com.svega.common.math.asUInt8Array
-import com.svega.moneroutils.BinHexUtils.binaryToString
-import com.svega.moneroutils.BinHexUtils.hexToBinary
-import com.svega.moneroutils.BinHexUtils.stringToBinary
+import com.svega.moneroutils.BinHexUtils.hexToUByteArray
 import java.math.BigInteger
 
+@ExperimentalUnsignedTypes
 object Base58{
 	private const val alphabetStr = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-	private val alphabet = alphabetStr.toByteArray().asUInt8Array()
+	private val alphabet = alphabetStr.toByteArray().asUByteArray()
 	private val encodedBlockSizes = intArrayOf(0, 2, 3, 5, 6, 7, 9, 10, 11)
 	private val alphabetSize = alphabet.size
 	private const val fullBlockSize = 8
 	private const val fullEncodedBlockSize = 11
-	private val twoPow8 = BigInteger("2").pow(8)
+	private val twoPow8 = 256u
 	private val UINT64_MAX = BigInteger("2").pow(64)
 
 	fun getAlphabetStr() = alphabetStr
 
-	private fun uint8BufToUInt64(data: Array<UInt8>) : BigInteger{
+	private fun uint8BufToUInt64(data: UByteArray) : ULong{
 		if (data.isEmpty() || data.size > 8) {
 			throw MoneroException("Invalid input length ${data.size}")
 		}
-		var res = BigInteger.ZERO
+		var res = 0uL
 		var i = 0
 		for(c in 9 - data.size until 9) {
-			res = when(c == 1) {
-				true -> res.add(BigInteger.valueOf(data[i++].toLong()))
-				false -> res.multiply(twoPow8).add(BigInteger.valueOf(data[i++].toLong()))
+			when(c == 1) {
+				true -> {
+                    res += data[i++].toULong()
+                }
+				false ->{
+                    res *= twoPow8
+                    res += data[i++].toULong()
+                }
 			}
 		}
 		return res
 	}
 
-	private fun uint64ToUInt8Buf(num: BigInteger, size: Int) : Array<UInt8> {
-		if (size < 1 || size > 8) {
-			throw MoneroException("Invalid input length")
-		}
-		if(num > UINT64_MAX){
-			throw MoneroException("Number is too large")
-		}
-		val numByteArray = num.toByteArray().asUInt8Array()
-		val res = Array(size) {UInt8(0)}
-		System.arraycopy(numByteArray,
-				if(numByteArray.size <= size) 0 else numByteArray.size - size,
-				res,
-				size - if(numByteArray.size <= size) numByteArray.size else size,
-				if(numByteArray.size <= size) numByteArray.size else size)
+    private fun uint64ToUInt8Buf(num: ULong, size: Int) : UByteArray {
+        if (size < 1 || size > 8) {
+            throw MoneroException("Invalid input length")
+        }
+        var numByteArray = num.toUByteArray()
+        if(numByteArray[0] > 127u){
+            numByteArray = UByteArray(numByteArray.size + 1){
+                when(it){
+                    0 -> 0u
+                    else -> numByteArray[it - 1]
+                }
+            }
+        }
+        val res = UByteArray(size)
+        numByteArray.copyInto(res,
+                size - if(numByteArray.size <= size) numByteArray.size else size,
+                if(numByteArray.size <= size) 0 else numByteArray.size - size,
+                (if(numByteArray.size <= size) 0 else numByteArray.size - size) + (if(numByteArray.size <= size) numByteArray.size else size))
 		return res
 	}
 
-	private fun encodeBlock(data: Array<UInt8>, buf: Array<UInt8>, index: Int) : Array<UInt8> {
+	private fun encodeBlock(data: UByteArray, buf: UByteArray, index: Int) : UByteArray {
 		if (data.isEmpty() || data.size > fullEncodedBlockSize) {
 			throw MoneroException("Invalid block length: ${data.size}")
 		}
 		var num = uint8BufToUInt64(data)
 		var i = encodedBlockSizes[data.size] - 1
 		// while num > 0
-		while (num > BigInteger.ZERO) {
-			val div = num.divideAndRemainder(alphabetSize.toBigInteger())
+        var lastNum = num
+		while ((lastNum >= num) and (num > 0uL)) {
+            lastNum = num
+            val remainder = num % alphabetSize.toULong()
+			num = num / alphabetSize.toUInt()
 			// remainder = num % alphabetSize
-			val remainder = div[1]
 			// num = num / alphabet_size
-			num = div[0]
 			buf[index + i] = alphabet[remainder.toInt()]
 			i--
 		}
@@ -72,27 +79,27 @@ object Base58{
 
 	@Throws(MoneroException::class)
 	fun encode(hex: String) : String{
-		val data = hexToBinary(hex)
+		val data = hexToUByteArray(hex)
 		if (data.isEmpty()) {
 			return ""
 		}
 		val fullBlockCount = Math.floor(data.size.toDouble() / fullBlockSize).toInt()
 		val sizeOfLastBlock = data.size % fullBlockSize
 		val resSize = (fullBlockCount * fullEncodedBlockSize + encodedBlockSizes[sizeOfLastBlock])
-		var res = Array(resSize) {UInt8(0)}
-		for (i in 0 until resSize) {
+		var res = UByteArray(resSize)
+        for (i in 0 until resSize) {
 			res[i] = alphabet[0]
 		}
 		for (i in 0 until fullBlockCount) {
-			res = encodeBlock(data.sliceArray(IntRange(i * fullBlockSize, i * fullBlockSize + fullBlockSize - 1)), res, i * fullEncodedBlockSize)
+			res = encodeBlock(data.copyOfRange(i * fullBlockSize, i * fullBlockSize + fullBlockSize), res, i * fullEncodedBlockSize)
 		}
 		if (sizeOfLastBlock > 0) {
-			res = encodeBlock(data.sliceArray(IntRange(fullBlockCount * fullBlockSize, fullBlockCount * fullBlockSize + sizeOfLastBlock - 1)), res, fullBlockCount * fullEncodedBlockSize)
+			res = encodeBlock(data.copyOfRange(fullBlockCount * fullBlockSize, fullBlockCount * fullBlockSize + sizeOfLastBlock), res, fullBlockCount * fullEncodedBlockSize)
 		}
-		return binaryToString(res)
+		return String(res.toByteArray())
 	}
 
-	private fun decodeBlock(data: Array<UInt8>, buf: Array<UInt8>, index: Int) : Array<UInt8> {
+	private fun decodeBlock(data: UByteArray, buf: UByteArray, index: Int) : UByteArray{
 		if (data.isEmpty() || data.size > fullEncodedBlockSize) {
 			throw MoneroException("Invalid block length: ${data.size}")
 		}
@@ -117,16 +124,15 @@ object Base58{
 		if (resSize < fullBlockSize && (BigInteger("2").pow(8 * resSize) < resNum)) {
 			throw MoneroException("Overflow 2")
 		}
-		val bytes = uint64ToUInt8Buf(resNum, resSize)
-		System.arraycopy(bytes, 0, buf, index, bytes.size)
+        uint64ToUInt8Buf(resNum.toLong().toULong(), resSize).copyInto(buf, index)
 		return buf
 	}
 
 	@Throws(MoneroException::class)
-	fun decode(enc_: String): Array<UInt8> {
-		val enc = stringToBinary(enc_)
+	fun decode(enc_: String): UByteArray{
+		val enc = enc_.toByteArray().asUByteArray()
 		if (enc.isEmpty()) {
-			return emptyArray()
+			return UByteArray(0)
 		}
 		val fullBlockCount = Math.floor(enc.size.toDouble() / fullEncodedBlockSize).toInt()
 		val lastBlockSize = enc.size % fullEncodedBlockSize
@@ -135,12 +141,12 @@ object Base58{
 			throw MoneroException("Invalid encoded length")
 		}
 		val dataSize = fullBlockCount * fullBlockSize + lastDecodedBlockSize
-		var data = Array(dataSize) { UInt8(0) }
-		for (i in 0 until fullBlockCount) {
-			data = decodeBlock(enc.sliceArray(IntRange(i * fullEncodedBlockSize, i * fullEncodedBlockSize + fullEncodedBlockSize - 1)), data, i * fullBlockSize)
+		var data = UByteArray(dataSize)
+        for (i in 0 until fullBlockCount) {
+			data = decodeBlock(enc.copyOfRange(i * fullEncodedBlockSize, i * fullEncodedBlockSize + fullEncodedBlockSize), data, i * fullBlockSize)
 		}
 		if (lastBlockSize > 0) {
-			data = decodeBlock(enc.sliceArray(IntRange(fullBlockCount * fullEncodedBlockSize, fullBlockCount * fullEncodedBlockSize + lastBlockSize - 1)), data, fullBlockCount * fullBlockSize)
+			data = decodeBlock(enc.copyOfRange(fullBlockCount * fullEncodedBlockSize, fullBlockCount * fullEncodedBlockSize + lastBlockSize), data, fullBlockCount * fullBlockSize)
 		}
 		return data
 	}
