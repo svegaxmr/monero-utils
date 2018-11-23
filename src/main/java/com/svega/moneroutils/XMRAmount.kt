@@ -4,7 +4,9 @@ class XMRAmount(amount: Long) {
     var atomicUnits = amount
         private set
     companion object {
+        @JvmStatic
         fun fromOther(inUnits: Double, division: AmountDivision) = XMRAmount((inUnits * division.multiplier).toLong())
+        @JvmStatic
         fun toOther(amount: XMRAmount, newDivision: AmountDivision) = (amount.atomicUnits / newDivision.multiplier)
     }
     fun toOther(newDivision: AmountDivision) = (atomicUnits / newDivision.multiplier)
@@ -14,6 +16,12 @@ class XMRAmount(amount: Long) {
     operator fun minus(other: XMRAmount): XMRAmount{
         return XMRAmount(atomicUnits - other.atomicUnits)
     }
+
+    fun toString(division: AmountDivision): String {
+        return "${atomicUnits / division.multiplier} ${division.prefix}XMR"
+    }
+
+    override fun toString() = toString(AmountDivision.WHOLE)
 }
 
 enum class AmountDivision(val prefix: String, val multiplier: Double){
