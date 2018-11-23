@@ -25,11 +25,9 @@ abstract class Scratchpad(val size: Int) {
         }
         @JvmStatic
         fun wrap(data: UByteArray): Scratchpad{
-            if(data.isEmpty())
-                return UByteArrayScratchpad(0)
-            val sp = getScratchpad(data.size)
-            sp[0] = data
-            return sp
+            if(data.isEmpty() or (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN))
+                return UByteArrayScratchpad(data)
+            return ByteBufferScratchpad(data)
         }
     }
 }

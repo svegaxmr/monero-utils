@@ -9,9 +9,10 @@ import java.nio.LongBuffer
  * Aligned accesses, but faster
  */
 @ExperimentalUnsignedTypes
-class ByteBufferScratchpad(size: Int): Scratchpad(size) {
-    private val pad: ByteBuffer = ByteBuffer.allocate(size)
-    private val ppad: UByteArray = pad.array().asUByteArray()
+class ByteBufferScratchpad(data: UByteArray): Scratchpad(data.size) {
+    constructor(size: Int): this(UByteArray(size))
+    private val ppad: UByteArray = data
+    private val pad: ByteBuffer = ByteBuffer.wrap(data.asByteArray())
     private val ipad: IntBuffer
     private val lpad: LongBuffer
     init{

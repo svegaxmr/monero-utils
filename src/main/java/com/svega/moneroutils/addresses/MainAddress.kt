@@ -23,6 +23,8 @@ class MainAddress: MoneroAddress {
         validate()
     }
 
+    fun getIntegratedAddress(paymentIDHex: String) = IntegratedAddress(this, paymentIDHex)
+
     private val subAddresses = HashMap<Pair<Int, Int>, SubAddress>()
     fun genSubaddress(account: Int, idx: Int): MoneroAddress{
         val index = Pair(account, idx)
