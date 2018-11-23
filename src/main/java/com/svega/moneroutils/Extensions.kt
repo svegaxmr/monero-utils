@@ -1,5 +1,6 @@
 package com.svega.moneroutils
 
+import com.svega.moneroutils.BinHexUtils.binaryToHex
 import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.math.BigInteger
@@ -98,12 +99,13 @@ fun ByteBuffer.getVarInt(): Int {
     return result
 }
 
+@ExperimentalUnsignedTypes
 fun ByteBuffer.printNextBytes(n: Int){
     mark()
     val one = ByteArray(Math.min(n, remaining()))
     get(one)
     reset()
-    println("next is ${BinHexUtils.binaryToHex(one)}")
+    println("next is ${binaryToHex(one)}")
 }
 
 fun ByteBuffer.readNewBuffer(): ByteBuffer{
@@ -208,4 +210,42 @@ fun UByteArray.getSwappedUInt(intOffset: Int): UInt{
             (this[i + 1].toUInt() shl 8) or
             (this[i + 2].toUInt() shl 16) or
             (this[i + 3].toUInt() shl 24)
+}
+
+@ExperimentalUnsignedTypes
+fun ULong.bits(): Int{
+    var ts = this
+    var bits = 0
+    while(ts != 0uL){
+        ++bits
+        ts = ts shr 1
+    }
+    return bits
+}
+
+@ExperimentalUnsignedTypes
+fun ULong.bytes(): Int = (bits() / 8) + if(bits() % 8 == 0) 0 else 1
+
+@ExperimentalUnsignedTypes
+fun ULong.toUByteArray(): UByteArray{
+    val pad = UByteArray(8)
+    pad[7] = this.toUByte()
+    pad[6] = (this shr 8).toUByte()
+    pad[5] = (this shr 16).toUByte()
+    pad[4] = (this shr 24).toUByte()
+    pad[3] = (this shr 32).toUByte()
+    pad[2] = (this shr 40).toUByte()
+    pad[1] = (this shr 48).toUByte()
+    pad[0] = (this shr 56).toUByte()
+    val ret = UByteArray(bytes())
+    pad.copyInto(ret, 0, 8 - ret.size, 8)
+    return ret
+}
+
+@ExperimentalUnsignedTypes
+infix fun UByteArray.concat(b: UByteArray): UByteArray{
+    val ret = UByteArray(size + b.size)
+    this.copyInto(ret)
+    b.copyInto(ret, size)
+    return ret
 }

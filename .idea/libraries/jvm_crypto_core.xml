@@ -4,6 +4,8 @@
       <root url="jar://$PROJECT_DIR$/lib/jvm-crypto-core.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/../jvm-crypto" />
+    </SOURCES>
   </library>
 </component>

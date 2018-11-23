@@ -7,6 +7,7 @@ import com.svega.moneroutils.BinHexUtils
 import com.svega.moneroutils.MoneroException
 import java.io.Serializable
 
+@ExperimentalUnsignedTypes
 data class Key(val data: ByteArray): Serializable {
     var str: String = ""
         get() {
@@ -37,9 +38,12 @@ data class Key(val data: ByteArray): Serializable {
     }
 }
 
+@ExperimentalUnsignedTypes
 typealias PublicKey = Key
+@ExperimentalUnsignedTypes
 typealias SecretKey = Key
 
+@ExperimentalUnsignedTypes
 fun SecretKey.getPublic(): PublicKey{
     val point = ge_p3()
     ge_scalarmult_base(point, this.data)

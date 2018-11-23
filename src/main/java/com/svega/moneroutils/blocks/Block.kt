@@ -16,6 +16,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 
+@ExperimentalUnsignedTypes
 open class Block: MoneroSerializable{
     lateinit var blockHeader: BlockHeader
     lateinit var coinbase: Transaction

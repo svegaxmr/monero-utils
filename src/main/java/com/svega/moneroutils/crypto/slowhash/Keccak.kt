@@ -125,4 +125,26 @@ object Keccak {
     {
         keccak(din, md)
     }
+
+    fun rawKeccak(data: ByteArray) = rawKeccak(data.asUByteArray()).asByteArray()
+
+    fun rawKeccak(data: UByteArray): UByteArray {
+        val sp = Scratchpad.wrap(data)
+        val out = Scratchpad.getScratchpad(32)
+        keccak1600(sp.getPointer(), out.getPointer())
+        return out.getRawArray()
+    }
+
+    fun fullChecksum(data: UByteArray): UByteArray {
+        val sp = Scratchpad.wrap(data)
+        val out = Scratchpad.getScratchpad(32)
+        keccak1600(sp.getPointer(), out.getPointer())
+        return out.getRawArray().copyOfRange(0, 4)
+    }
+
+    fun checkChecksum(data: UByteArray): Boolean {
+        val toCheck = data.copyOfRange(0, data.size - 4)
+        val preCSum = data.copyOfRange(data.size - 4, data.size)
+        return preCSum.contentEquals(fullChecksum(toCheck))
+    }
 }

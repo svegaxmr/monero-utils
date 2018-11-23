@@ -3,6 +3,7 @@ package com.svega.moneroutils.blocks
 import com.svega.moneroutils.BinHexUtils
 import org.junit.Test
 
+@ExperimentalUnsignedTypes
 class BlockTest{
     @Test
     fun `Parse Block V5_5`(){

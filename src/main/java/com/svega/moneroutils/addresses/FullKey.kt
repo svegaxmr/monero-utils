@@ -1,10 +1,9 @@
 package com.svega.moneroutils.addresses
 
-import com.svega.common.math.asByteArray
-import com.svega.crypto.common.algos.Keccak
 import com.svega.moneroutils.*
 import java.io.Serializable
 
+@ExperimentalUnsignedTypes
 data class FullKey(val spend: KeyPair, val view: KeyPair): Serializable{
     init {
         if(spend.public.data.size != 32)
@@ -18,12 +17,12 @@ data class FullKey(val spend: KeyPair, val view: KeyPair): Serializable{
     }
     fun getAddressString(addressType: AddressType, netType: NetType): String{
         val toHash = "${netType.getPrefixStr(addressType)}${spend.public.str}${view.public.str}"
-        val csum = Keccak.checksum(BinHexUtils.hexToBinary(toHash))
+        val csum = com.svega.moneroutils.crypto.slowhash.Keccak.fullChecksum(BinHexUtils.hexToUByteArray(toHash)).asByteArray()
         return Base58.encode(toHash + BinHexUtils.binaryToHex(csum))
     }
     fun getAddressBytes(addressType: AddressType, netType: NetType): ByteArray{
         val toHash = "${netType.getPrefixStr(addressType)}${spend.public.str}${view.public.str}"
-        val csum = Keccak.checksum(BinHexUtils.hexToBinary(toHash))
+        val csum = com.svega.moneroutils.crypto.slowhash.Keccak.fullChecksum(BinHexUtils.hexToUByteArray(toHash))
         return BinHexUtils.hexToByteArray(toHash) + csum.asByteArray()
     }
 }

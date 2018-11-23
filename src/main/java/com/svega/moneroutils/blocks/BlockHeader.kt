@@ -7,6 +7,7 @@ import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.util.*
 
+@ExperimentalUnsignedTypes
 open class BlockHeader: MoneroSerializable{
     var major = -1
     var minor = -1

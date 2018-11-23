@@ -3,6 +3,7 @@ package com.svega.moneroutils.transactions
 import com.svega.moneroutils.BinHexUtils
 import java.util.*
 
+@ExperimentalUnsignedTypes
 data class PaymentID(val encrypted: Boolean, val data: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
