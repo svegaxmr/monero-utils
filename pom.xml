@@ -30,13 +30,6 @@
             <systemPath>${basedir}/lib/jvm-crypto-core.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>com.github.svegaxmr</groupId>
-            <artifactId>common.utils</artifactId>
-            <version>0.2.2</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/svega-common-utils-core.jar</systemPath>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>

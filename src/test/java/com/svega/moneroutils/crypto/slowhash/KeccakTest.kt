@@ -11,7 +11,6 @@ class KeccakTest{
     @Test
     fun `Test keccakf1600`(){
         val lines = Files.readAllLines(Paths.get("C:\\wksp\\monero-utils\\src\\test\\java\\com\\svega\\moneroutils\\crypto\\slowhash\\fast_tests.txt"))
-        var i = 0
         val ret = Scratchpad.getScratchpad(200)
 
         for(t in lines){

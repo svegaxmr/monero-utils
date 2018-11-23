@@ -1,18 +1,21 @@
 package com.svega.moneroutils.addresses
 
-import com.svega.moneroutils.*
-import com.svega.common.math.*
 import com.svega.crypto.common.CryptoOps
 import com.svega.crypto.common.algos.Keccak
 import com.svega.crypto.common.algos.Parameter
-import java.io.Serializable
+import com.svega.moneroutils.AddressType
+import com.svega.moneroutils.Base58
+import com.svega.moneroutils.MoneroException
+import com.svega.moneroutils.NetType
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.io.Serializable
 
 
+@ExperimentalUnsignedTypes
 abstract class MoneroAddress: Serializable {
-    var bytes: Array<UInt8>
+    var bytes: UByteArray
         protected set
     var address: String
         protected set
@@ -29,8 +32,8 @@ abstract class MoneroAddress: Serializable {
         this.address = address
         seed = null
         bytes = Base58.decode(address)
-        val spend = KeyPair(Key(bytes.sliceArray(IntRange(1, 32)).asByteArray()), null)
-        val view = KeyPair(Key(bytes.sliceArray(IntRange(33, 64)).asByteArray()), null)
+        val spend = KeyPair(Key(bytes.copyOfRange(0, 32).asByteArray()), null)
+        val view = KeyPair(Key(bytes.copyOfRange(32, 64).asByteArray()), null)
         key = FullKey(spend, view)
     }
 
@@ -47,7 +50,7 @@ abstract class MoneroAddress: Serializable {
         val view = generateKeys(second) //spend is got from generatekeys
         key = FullKey(spend, view)
         address = key.getAddressString(addrType, net)
-        bytes = key.getAddressBytes(addrType, net).asUInt8Array()
+        bytes = key.getAddressBytes(addrType, net).asUByteArray()
     }
 
     protected constructor(key: FullKey, net: NetType, addrType: AddressType){
@@ -55,7 +58,7 @@ abstract class MoneroAddress: Serializable {
         this.net = net
         seed = null
         address = key.getAddressString(addrType, net)
-        bytes = key.getAddressBytes(addrType, net).asUInt8Array()
+        bytes = key.getAddressBytes(addrType, net).asUByteArray()
     }
 
     open fun validate(){
@@ -89,7 +92,7 @@ abstract class MoneroAddress: Serializable {
         var read = stream.readShort()
         val temp = ByteArray(read.toInt())
         stream.readFully(temp)
-        bytes = temp.asUInt8Array()
+        bytes = temp.asUByteArray()
         address = stream.readUTF()
         key = stream.readObject() as FullKey
         net = stream.readObject() as NetType
@@ -101,8 +104,10 @@ abstract class MoneroAddress: Serializable {
 
     }
 
+    @ExperimentalUnsignedTypes
     companion object {
         const val SERIALIZABLE_VERSION = 0
+        @JvmStatic
         @Throws(MoneroException::class)
         fun stringToAddress(address: String) : MoneroAddress {
             val arr = Base58.decode(address)
@@ -120,15 +125,15 @@ abstract class MoneroAddress: Serializable {
                 else -> throw MoneroException("Address prefix ${arr[0]} is not a valid prefix")
             }
         }
+        @JvmStatic
         @Throws(MoneroException::class)
-        fun validateChecksum(bytes: Array<UInt8>, address: String) {
-            val checksum = Keccak.addressChecksum(bytes)
-            if (!checksum.contentEquals(bytes.sliceArray(IntRange(bytes.size - 4, bytes.size - 1)))) {
-                println(BinHexUtils.binaryToHex(checksum))
-                println(BinHexUtils.binaryToHex(bytes.sliceArray(IntRange(bytes.size - 4, bytes.size - 1))))
+        fun validateChecksum(bytes_: UByteArray, address: String) {
+            val checksum = com.svega.moneroutils.crypto.slowhash.Keccak.checkChecksum(bytes_)
+            if (!checksum) {
                 throw MoneroException("Invalid address $address fails checksum")
             }
         }
+        @JvmStatic
         fun generateKeys(seed: ByteArray): KeyPair {
             if (seed.size != 32)
                 throw MoneroException("Invalid input length!")

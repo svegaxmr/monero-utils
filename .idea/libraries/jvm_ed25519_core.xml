@@ -4,6 +4,8 @@
       <root url="jar://$PROJECT_DIR$/lib/jvm-ed25519-core.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="file://$PROJECT_DIR$/../jvm-ed25519" />
+    </SOURCES>
   </library>
 </component>

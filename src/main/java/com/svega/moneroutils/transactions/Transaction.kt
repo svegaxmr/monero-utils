@@ -5,13 +5,10 @@ import com.svega.moneroutils.XMRAmount
 import com.svega.moneroutils.crypto.Hashing
 import com.svega.moneroutils.crypto.MoneroSerializable
 import java.io.ByteArrayOutputStream
-import java.net.URL
 import java.nio.ByteBuffer
-import java.net.HttpURLConnection
-import java.nio.file.Files
-import java.nio.file.Paths
 
 
+@ExperimentalUnsignedTypes
 class Transaction private constructor(): MoneroSerializable{
     lateinit var header: TransactionPrefix
         private set
@@ -37,6 +34,7 @@ class Transaction private constructor(): MoneroSerializable{
         b.write(header.toBlob())
         return b.toByteArray()
     }
+    @ExperimentalUnsignedTypes
     companion object {
         fun parseBlobHeader(blob: ByteArray) = parseBlobHeader(ByteBuffer.wrap(blob).rewind())
 
@@ -78,22 +76,5 @@ class Transaction private constructor(): MoneroSerializable{
 
 }
 
+@ExperimentalUnsignedTypes
 typealias CoinbaseTransaction = Transaction
-
-fun main(args: Array<String>){
-    val address = URL("http://node.moneroworld.com:18089/get_transaction_pool")
-    val hc = address.openConnection() as HttpURLConnection
-
-
-    hc.doOutput = true
-    hc.doInput = true
-    hc.useCaches = false
-    hc.setRequestProperty("Content-Type", "application/json")
-
-    val path = Paths.get("out.json")
-    /*Files.delete(path)
-
-    Files.copy(hc.inputStream, path)*/
-
-    Transaction.parseBlobHeader(Files.readAllBytes(path))
-}

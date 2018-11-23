@@ -1,5 +1,7 @@
 package com.svega.moneroutils.crypto.slowhash
 
+import java.nio.ByteOrder
+
 @ExperimentalUnsignedTypes
 abstract class Scratchpad(val size: Int) {
     abstract operator fun plus(off: Int): UBytePointer
@@ -16,6 +18,18 @@ abstract class Scratchpad(val size: Int) {
     abstract fun getRawArray(): UByteArray
     companion object {
         @JvmStatic
-        fun getScratchpad(size: Int) : Scratchpad = ByteBufferScratchpad(size)
+        fun getScratchpad(size: Int) : Scratchpad{
+            if((size == 0) or (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN))
+                return UByteArrayScratchpad(size)
+            return ByteBufferScratchpad(size)
+        }
+        @JvmStatic
+        fun wrap(data: UByteArray): Scratchpad{
+            if(data.isEmpty())
+                return UByteArrayScratchpad(0)
+            val sp = getScratchpad(data.size)
+            sp[0] = data
+            return sp
+        }
     }
 }

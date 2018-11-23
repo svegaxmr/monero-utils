@@ -1,13 +1,7 @@
 package com.svega.moneroutils
 
-import com.svega.common.math.UInt8
-import com.svega.common.math.asByteArray
-import com.svega.common.math.asUInt8Array
-import com.svega.common.math.toUInt8
-
+@ExperimentalUnsignedTypes
 object BinHexUtils {
-    fun hexToBinary(hex: String) = hexToByteArray(hex).asUInt8Array()
-
     fun hexToByteArray(s: String): ByteArray {
         val len = s.length
 
@@ -28,6 +22,33 @@ object BinHexUtils {
             }
 
             out[i / 2] = (h * 16 + l).toByte()
+            i += 2
+        }
+
+        return out
+    }
+
+    @ExperimentalUnsignedTypes
+    fun hexToUByteArray(s: String): UByteArray {
+        val len = s.length
+
+        if (len % 2 != 0)
+            throw MoneroException("Hex string has invalid length!")
+        if(s.isEmpty())
+            return ubyteArrayOf()
+
+        val out = UByteArray(len / 2)
+
+        var i = 0
+        while (i < len) {
+            val h = hexToBin(s[i])
+            val l = hexToBin(s[i + 1])
+            if (h == -1 || l == -1) {
+                throw IllegalArgumentException(
+                        "contains illegal character for hexBinary: $s")
+            }
+
+            out[i / 2] = (h * 16 + l).toUByte()
             i += 2
         }
 
@@ -58,30 +79,9 @@ object BinHexUtils {
         return r.toString()
     }
 
-    fun binaryToHex(bin: Array<UInt8>) = printHexBinary(bin.asByteArray())
-
     fun binaryToHex(bin: ByteArray)  = printHexBinary(bin)
 
+    fun binaryToHex(bin: UByteArray)  = printHexBinary(bin.asByteArray())
+
     fun binaryToHex(bin: List<Byte>) = printHexBinary(bin.toByteArray())
-
-    fun stringToBinary(str: String) : Array<UInt8>{
-        val bytes = str.toByteArray()
-        val ret = Array(bytes.size) { _ -> UInt8(0)}
-        for(i in 0 until bytes.size){
-            ret[i] = bytes[i].toUInt8()
-        }
-        return ret
-    }
-
-    fun binaryToString(bin: Array<UInt8>) : String {
-        val cr = CharArray(bin.size)
-
-        for(i in 0 until bin.size){
-            cr[i] = bin[i].toChar()
-            if(cr[i].toInt() >= 128)
-                cr[i] = (cr[i].toInt() and 0x00FF).toChar()
-        }
-
-        return String(cr)
-    }
 }
