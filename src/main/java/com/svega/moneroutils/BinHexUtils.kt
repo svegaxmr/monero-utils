@@ -1,6 +1,9 @@
 package com.svega.moneroutils
 
-import com.svega.common.math.*
+import com.svega.common.math.UInt8
+import com.svega.common.math.asByteArray
+import com.svega.common.math.asUInt8Array
+import com.svega.common.math.toUInt8
 
 object BinHexUtils {
     fun hexToBinary(hex: String) = hexToByteArray(hex).asUInt8Array()
@@ -63,7 +66,7 @@ object BinHexUtils {
 
     fun stringToBinary(str: String) : Array<UInt8>{
         val bytes = str.toByteArray()
-        val ret = Array(bytes.size, {_ -> UInt8(0)})
+        val ret = Array(bytes.size) { _ -> UInt8(0)}
         for(i in 0 until bytes.size){
             ret[i] = bytes[i].toUInt8()
         }

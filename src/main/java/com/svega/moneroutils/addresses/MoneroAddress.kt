@@ -29,7 +29,7 @@ abstract class MoneroAddress: Serializable {
         this.address = address
         seed = null
         bytes = Base58.decode(address)
-        val spend = KeyPair(Key(bytes.sliceArray(IntRange(1,32)).asByteArray()), null)
+        val spend = KeyPair(Key(bytes.sliceArray(IntRange(1, 32)).asByteArray()), null)
         val view = KeyPair(Key(bytes.sliceArray(IntRange(33, 64)).asByteArray()), null)
         key = FullKey(spend, view)
     }
@@ -41,7 +41,7 @@ abstract class MoneroAddress: Serializable {
         this.seed = seed
         val spend: KeyPair = when(secretSpendKey == null){
             true -> generateKeys(seed!!)
-            false -> KeyPair.genFromSecret(secretSpendKey!!.data)
+            false -> KeyPair.genFromSecret(secretSpendKey.data)
         }
         val second = Keccak.getHash(spend.secret!!.data, Parameter.KECCAK_256) //keccak256 of view gets spend
         val view = generateKeys(second) //spend is got from generatekeys
