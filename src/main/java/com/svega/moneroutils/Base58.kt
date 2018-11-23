@@ -1,6 +1,7 @@
 package com.svega.moneroutils
 
-import com.svega.common.math.*
+import com.svega.common.math.UInt8
+import com.svega.common.math.asUInt8Array
 import com.svega.moneroutils.BinHexUtils.binaryToString
 import com.svega.moneroutils.BinHexUtils.hexToBinary
 import com.svega.moneroutils.BinHexUtils.stringToBinary
@@ -8,7 +9,7 @@ import java.math.BigInteger
 
 object Base58{
 	private const val alphabetStr = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-	private val alphabet = alphabetStr.toByteArray()
+	private val alphabet = alphabetStr.toByteArray().asUInt8Array()
 	private val encodedBlockSizes = intArrayOf(0, 2, 3, 5, 6, 7, 9, 10, 11)
 	private val alphabetSize = alphabet.size
 	private const val fullBlockSize = 8
@@ -20,7 +21,7 @@ object Base58{
 
 	private fun uint8BufToUInt64(data: Array<UInt8>) : BigInteger{
 		if (data.isEmpty() || data.size > 8) {
-			throw MoneroException("Invalid input length "+data.size)
+			throw MoneroException("Invalid input length ${data.size}")
 		}
 		var res = BigInteger.ZERO
 		var i = 0
@@ -33,14 +34,14 @@ object Base58{
 		return res
 	}
 
-	private fun uint64ToUInt8Buf(num_: BigInteger, size: Int) : Array<UInt8> {
+	private fun uint64ToUInt8Buf(num: BigInteger, size: Int) : Array<UInt8> {
 		if (size < 1 || size > 8) {
 			throw MoneroException("Invalid input length")
 		}
-		if(num_ > UINT64_MAX){
+		if(num > UINT64_MAX){
 			throw MoneroException("Number is too large")
 		}
-		val numByteArray = num_.toByteArray().asUInt8Array()
+		val numByteArray = num.toByteArray().asUInt8Array()
 		val res = Array(size) {UInt8(0)}
 		System.arraycopy(numByteArray,
 				if(numByteArray.size <= size) 0 else numByteArray.size - size,
@@ -52,7 +53,7 @@ object Base58{
 
 	private fun encodeBlock(data: Array<UInt8>, buf: Array<UInt8>, index: Int) : Array<UInt8> {
 		if (data.isEmpty() || data.size > fullEncodedBlockSize) {
-			throw MoneroException("Invalid block length: " + data.size)
+			throw MoneroException("Invalid block length: ${data.size}")
 		}
 		var num = uint8BufToUInt64(data)
 		var i = encodedBlockSizes[data.size] - 1
@@ -63,7 +64,7 @@ object Base58{
 			val remainder = div[1]
 			// num = num / alphabet_size
 			num = div[0]
-			buf[index + i] = alphabet[remainder.toInt()].toUInt8()
+			buf[index + i] = alphabet[remainder.toInt()]
 			i--
 		}
 		return buf
@@ -76,24 +77,24 @@ object Base58{
 			return ""
 		}
 		val fullBlockCount = Math.floor(data.size.toDouble() / fullBlockSize).toInt()
-		val lastBlockSize = data.size % fullBlockSize
-		val resSize = (fullBlockCount * fullEncodedBlockSize + encodedBlockSizes[lastBlockSize])
-		var res = Array(resSize) { UInt8(0)}
+		val sizeOfLastBlock = data.size % fullBlockSize
+		val resSize = (fullBlockCount * fullEncodedBlockSize + encodedBlockSizes[sizeOfLastBlock])
+		var res = Array(resSize) {UInt8(0)}
 		for (i in 0 until resSize) {
-			res[i] = alphabet[0].toUInt8()
+			res[i] = alphabet[0]
 		}
 		for (i in 0 until fullBlockCount) {
 			res = encodeBlock(data.sliceArray(IntRange(i * fullBlockSize, i * fullBlockSize + fullBlockSize - 1)), res, i * fullEncodedBlockSize)
 		}
-		if (lastBlockSize > 0) {
-			res = encodeBlock(data.sliceArray(IntRange(fullBlockCount * fullBlockSize, fullBlockCount * fullBlockSize + lastBlockSize - 1)), res, fullBlockCount * fullEncodedBlockSize)
+		if (sizeOfLastBlock > 0) {
+			res = encodeBlock(data.sliceArray(IntRange(fullBlockCount * fullBlockSize, fullBlockCount * fullBlockSize + sizeOfLastBlock - 1)), res, fullBlockCount * fullEncodedBlockSize)
 		}
 		return binaryToString(res)
 	}
 
 	private fun decodeBlock(data: Array<UInt8>, buf: Array<UInt8>, index: Int) : Array<UInt8> {
 		if (data.isEmpty() || data.size > fullEncodedBlockSize) {
-			throw MoneroException("Invalid block length: " + data.size)
+			throw MoneroException("Invalid block length: ${data.size}")
 		}
 		val resSize = encodedBlockSizes.indexOf(data.size)
 		if (resSize <= 0) {
@@ -102,7 +103,7 @@ object Base58{
 		var resNum = BigInteger.ZERO
 		var order = BigInteger.ONE
 		for (i in data.size - 1 downTo 0) {
-			val digit = alphabet.indexOf(data[i].toByte())
+			val digit = alphabet.indexOf(data[i])
 			if (digit < 0) {
 				throw MoneroException("Invalid symbol")
 			}
@@ -125,7 +126,7 @@ object Base58{
 	fun decode(enc_: String): Array<UInt8> {
 		val enc = stringToBinary(enc_)
 		if (enc.isEmpty()) {
-			return Array(0) { UInt8(0) }
+			return emptyArray()
 		}
 		val fullBlockCount = Math.floor(enc.size.toDouble() / fullEncodedBlockSize).toInt()
 		val lastBlockSize = enc.size % fullEncodedBlockSize
