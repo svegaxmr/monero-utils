@@ -1,46 +1,41 @@
 package com.svega.moneroutils.crypto.slowhash
 
 @ExperimentalUnsignedTypes
-data class JHHashState(
-        var hashbitlen: Int,	   	              /*the message digest size*/
-    var databitlen: Int,    /*the message size in bits*/
-    var datasizeInBuffer: Int,      /*the size of the message remained in buffer; assumed to be multiple of 8bits except for the last partial block at the end of the message*/
-    val x: Array<ULongArray> = cx(),    /*the 1024-bit state, ( x[i][0] || x[i][1] ) is the ith row of the state in the pseudocode*/
-    val buffer: Scratchpad = UByteArrayScratchpad(64),         /*the 512-bit message block to be hashed;*/
-    val bp: UBytePointer = buffer.getPointer(0),
-        val bpl: ULongPointer = buffer.getPointer(0).toULongPointer()
-){
-    companion object {
-        private fun cx() = Array(8){ ULongArray(2)}
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as JHHashState
-
-        if (hashbitlen != other.hashbitlen) return false
-        if (databitlen != other.databitlen) return false
-        if (datasizeInBuffer != other.datasizeInBuffer) return false
-        if (!x.contentEquals(other.x)) return false
-        if (buffer != other.buffer) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = hashbitlen
-        result = 31 * result + databitlen.hashCode()
-        result = 31 * result + datasizeInBuffer.hashCode()
-        result = 31 * result + x.contentHashCode()
-        result = 31 * result + buffer.hashCode()
-        return result
-    }
-}
-
-@ExperimentalUnsignedTypes
 object JH {
+    @ExperimentalUnsignedTypes
+    data class JHHashState(
+            var hashbitlen: Int,	   	              /*the message digest size*/
+            var databitlen: Int,    /*the message size in bits*/
+            var datasizeInBuffer: Int,      /*the size of the message remained in buffer; assumed to be multiple of 8bits except for the last partial block at the end of the message*/
+            val x: Array<ULongArray> =  Array(8){ ULongArray(2)},    /*the 1024-bit state, ( x[i][0] || x[i][1] ) is the ith row of the state in the pseudocode*/
+            val buffer: Scratchpad = UByteArrayScratchpad(64),         /*the 512-bit message block to be hashed;*/
+            val bp: UBytePointer = buffer.getPointer(0),
+            val bpl: ULongPointer = buffer.getPointer(0).toULongPointer()
+    ){
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as JHHashState
+
+            if (hashbitlen != other.hashbitlen) return false
+            if (databitlen != other.databitlen) return false
+            if (datasizeInBuffer != other.datasizeInBuffer) return false
+            if (!x.contentEquals(other.x)) return false
+            if (buffer != other.buffer) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = hashbitlen
+            result = 31 * result + databitlen.hashCode()
+            result = 31 * result + datasizeInBuffer.hashCode()
+            result = 31 * result + x.contentHashCode()
+            result = 31 * result + buffer.hashCode()
+            return result
+        }
+    }
     private val JH256_H0 = ubyteArrayOf(0xebu, 0x98u, 0xa3u, 0x41u, 0x2cu, 0x20u, 0xd3u, 0xebu, 0x92u, 0xcdu, 0xbeu, 0x7bu, 0x9cu, 0xb2u, 0x45u, 0xc1u, 0x1cu, 0x93u, 0x51u, 0x91u, 0x60u, 0xd4u, 0xc7u, 0xfau, 0x26u, 0x0u, 0x82u, 0xd6u, 0x7eu, 0x50u, 0x8au, 0x3u, 0xa4u, 0x23u, 0x9eu, 0x26u, 0x77u, 0x26u, 0xb9u, 0x45u, 0xe0u, 0xfbu, 0x1au, 0x48u, 0xd4u, 0x1au, 0x94u, 0x77u, 0xcdu, 0xb5u, 0xabu, 0x26u, 0x2u, 0x6bu, 0x17u, 0x7au, 0x56u, 0xf0u, 0x24u, 0x42u, 0xfu, 0xffu, 0x2fu, 0xa8u, 0x71u, 0xa3u, 0x96u, 0x89u, 0x7fu, 0x2eu, 0x4du, 0x75u, 0x1du, 0x14u, 0x49u, 0x8u, 0xf7u, 0x7du, 0xe2u, 0x62u, 0x27u, 0x76u, 0x95u, 0xf7u, 0x76u, 0x24u, 0x8fu, 0x94u, 0x87u, 0xd5u, 0xb6u, 0x57u, 0x47u, 0x80u, 0x29u, 0x6cu, 0x5cu, 0x5eu, 0x27u, 0x2du, 0xacu, 0x8eu, 0xdu, 0x6cu, 0x51u, 0x84u, 0x50u, 0xc6u, 0x57u, 0x5u, 0x7au, 0xfu, 0x7bu, 0xe4u, 0xd3u, 0x67u, 0x70u, 0x24u, 0x12u, 0xeau, 0x89u, 0xe3u, 0xabu, 0x13u, 0xd3u, 0x1cu, 0xd7u, 0x69u)
     private val E8BitsliceRoundconstant = Array(42){when(it){
         0 -> UByteArrayScratchpad(ubyteArrayOf(0x72u,0xd5u,0xdeu,0xa2u,0xdfu,0x15u,0xf8u,0x67u,0x7bu,0x84u,0x15u,0xau,0xb7u,0x23u,0x15u,0x57u,0x81u,0xabu,0xd6u,0x90u,0x4du,0x5au,0x87u,0xf6u,0x4eu,0x9fu,0x4fu,0xc5u,0xc3u,0xd1u,0x2bu,0x40u))

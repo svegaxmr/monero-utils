@@ -2,6 +2,18 @@ package com.svega.moneroutils.crypto.slowhash
 
 @ExperimentalUnsignedTypes
 object OAES {
+    @ExperimentalUnsignedTypes
+    data class OAESContext(
+            var key: OAESKey
+    )
+
+    @ExperimentalUnsignedTypes
+    data class OAESKey(
+            var data: UByteArray,
+            var expData: UBytePointer,
+            var numKeys: Int,
+            var keyBase: Int
+    )
 
     private const val OAES_RKEY_LEN = 4
     private const val OAES_COL_LEN = 4
@@ -114,16 +126,3 @@ object OAES {
 
     fun oaesAlloc() = OAESContext(OAESKey(UByteArray(0), Scratchpad.getScratchpad(0).getPointer(0), 0, 0))
 }
-
-@ExperimentalUnsignedTypes
-data class OAESContext(
-    var key: OAESKey
-)
-
-@ExperimentalUnsignedTypes
-data class OAESKey(
-    var data: UByteArray,
-    var expData: UBytePointer,
-    var numKeys: Int,
-    var keyBase: Int
-)

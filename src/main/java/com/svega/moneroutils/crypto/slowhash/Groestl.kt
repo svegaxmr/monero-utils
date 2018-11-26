@@ -1,8 +1,18 @@
 package com.svega.moneroutils.crypto.slowhash
 
 @ExperimentalUnsignedTypes
-@Suppress("EXPERIMENTAL_UNSIGNED_LITERALS")
 object Groestl {
+
+    @ExperimentalUnsignedTypes
+    class GSHashState{
+        val chaining = Scratchpad.getScratchpad(Groestl.SIZE512).getPointer(0).toUIntPointer()            /* actual state */
+        var blockCounter1 = 0u
+        var blockCounter2 = 0u
+        val buffer = Scratchpad.getScratchpad(Groestl.SIZE512).getPointer(0)
+        var bufPtr = 0              /* data buffer pointer */
+        var bitsInLastByte = 0    /* no. of message bits in last byte of
+			       data buffer */
+    }
     private val T = uintArrayOf(0xa5f432c6u, 0xc6a597f4u, 0x84976ff8u, 0xf884eb97u, 0x99b05eeeu, 0xee99c7b0u, 0x8d8c7af6u, 0xf68df78cu, 0xd17e8ffu, 0xff0de517u, 0xbddc0ad6u, 0xd6bdb7dcu, 0xb1c816deu, 0xdeb1a7c8u, 0x54fc6d91u, 0x915439fcu,
             0x50f09060u, 0x6050c0f0u, 0x3050702u, 0x2030405u, 0xa9e02eceu, 0xcea987e0u, 0x7d87d156u, 0x567dac87u, 0x192bcce7u, 0xe719d52bu, 0x62a613b5u, 0xb56271a6u, 0xe6317c4du, 0x4de69a31u, 0x9ab559ecu, 0xec9ac3b5u,
             0x45cf408fu, 0x8f4505cfu, 0x9dbca31fu, 0x1f9d3ebcu, 0x40c04989u, 0x894009c0u, 0x879268fau, 0xfa87ef92u, 0x153fd0efu, 0xef15c53fu, 0xeb2694b2u, 0xb2eb7f26u, 0xc940ce8eu, 0x8ec90740u, 0xb1de6fbu, 0xfb0bed1du,
@@ -378,15 +388,4 @@ object Groestl {
         update(S, din, inlen * 8u)
         final(S, out)
     }
-}
-
-@ExperimentalUnsignedTypes
-class GSHashState{
-    val chaining = Scratchpad.getScratchpad(Groestl.SIZE512).getPointer(0).toUIntPointer()            /* actual state */
-    var blockCounter1 = 0u
-    var blockCounter2 = 0u
-    val buffer = Scratchpad.getScratchpad(Groestl.SIZE512).getPointer(0)
-    var bufPtr = 0              /* data buffer pointer */
-    var bitsInLastByte = 0    /* no. of message bits in last byte of
-			       data buffer */
 }
