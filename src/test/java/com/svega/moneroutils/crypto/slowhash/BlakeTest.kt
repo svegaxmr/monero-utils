@@ -10,10 +10,10 @@ class BlakeTest {
 
     @ExperimentalUnsignedTypes
     @Test
-    fun blake256_hash() {
+    fun `Blake Test`() {
         val lines = Files.readAllLines(Paths.get("C:\\wksp\\monero-utils\\src\\test\\java\\com\\svega\\moneroutils\\crypto\\slowhash\\blake_tests.txt"))
         val out = Scratchpad.getScratchpad(32)
-        for(t in lines){
+        for (t in lines) {
             val spl = t.split(" ")
             val data = BinHexUtils.hexToByteArray(spl[1]).toUByteArray()
             val don = Scratchpad.getScratchpad(data.size)

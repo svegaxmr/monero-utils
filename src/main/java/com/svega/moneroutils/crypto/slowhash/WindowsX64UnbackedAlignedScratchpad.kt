@@ -1,19 +1,14 @@
 package com.svega.moneroutils.crypto.slowhash
 
+import org.lwjgl.system.MemoryUtil
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.IntBuffer
 import java.nio.LongBuffer
 
-/**
- * Aligned accesses, but faster
- */
 @ExperimentalUnsignedTypes
-class ByteBufferScratchpad(data: UByteArray) : Scratchpad(data.size) {
-    constructor(size: Int) : this(UByteArray(size))
-
-    private val ppad: UByteArray = data
-    private val pad: ByteBuffer = ByteBuffer.wrap(data.asByteArray())
+class WindowsX64UnbackedAlignedScratchpad(size: Int) : Scratchpad(size) {
+    private val pad: ByteBuffer = MemoryUtil.memAlignedAlloc(256, size)
     private val ipad: IntBuffer
     private val lpad: LongBuffer
 
@@ -23,26 +18,33 @@ class ByteBufferScratchpad(data: UByteArray) : Scratchpad(data.size) {
         lpad = pad.asLongBuffer()
     }
 
-    override fun getRawArray() = ppad
+    override fun close() {
+        MemoryUtil.memAlignedFree(pad)
+    }
+
+    override fun getRawArray() = throw RuntimeException("Speed, baby")
 
     override operator fun plus(off: Int): UBytePointer {
         return UBytePointer(this, off)
     }
 
     override operator fun get(i: Int, size: Int): UByteArray {
-        return ppad.copyOfRange(i, i + size)
+        val ret = UByteArray(size)
+        pad.get(ret.asByteArray(), i, size)
+        return ret
     }
 
     override operator fun set(i: Int, arr: UByteArray) {
-        arr.copyInto(destination = ppad, destinationOffset = i)
+        pad.position(i)
+        pad.put(arr.asByteArray())
     }
 
     override operator fun set(i: Int, b: UByte) {
-        ppad[i] = b
+        pad.put(i, b.toByte())
     }
 
     override operator fun get(i: Int): UByte {
-        return ppad[i]
+        return pad.get(i).toUByte()
     }
 
     override fun getPointer(i: Int): UBytePointer {

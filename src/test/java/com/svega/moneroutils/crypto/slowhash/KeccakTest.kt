@@ -6,14 +6,14 @@ import org.junit.Test
 import java.nio.file.Files
 import java.nio.file.Paths
 
-class KeccakTest{
+class KeccakTest {
     @ExperimentalUnsignedTypes
     @Test
-    fun `Test keccakf1600`(){
+    fun `Test keccakf1600`() {
         val lines = Files.readAllLines(Paths.get("C:\\wksp\\monero-utils\\src\\test\\java\\com\\svega\\moneroutils\\crypto\\slowhash\\fast_tests.txt"))
         val ret = Scratchpad.getScratchpad(200)
 
-        for(t in lines){
+        for (t in lines) {
             val spl = t.split(" ")
             val data = BinHexUtils.hexToByteArray(spl[1]).toUByteArray()
             val sp2 = Scratchpad.getScratchpad(data.size)

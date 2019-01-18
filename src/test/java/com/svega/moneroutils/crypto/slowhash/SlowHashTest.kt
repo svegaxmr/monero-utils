@@ -8,7 +8,7 @@ import kotlin.test.assertTrue
 class SlowHashTest {
 
     @Test
-    fun cnSlowHash() {
+    fun `Slow Hash V0`() {
         val res = UByteArray(32)
 
         val var0 = "2f8e3df40bd11f9ac90c743ca8e32bb391da4fb98612aa3b6cdc639ee00b31f5 6465206f6d6e69627573206475626974616e64756d\n" +
@@ -16,13 +16,35 @@ class SlowHashTest {
                 "bbec2cacf69866a8e740380fe7b818fc78f8571221742d729d9d02d7f8989b87 63617665617420656d70746f72\n" +
                 "b1257de4efc5ce28c6b40ceb1c6c8f812a64634eb3e81c5220bee9b2b76a6f05 6578206e6968696c6f206e6968696c20666974"
 
-        val var1 = "b5a7f63abb94d07d1a6445c36c07c7e8327fe61b1647e391b4c7edae5de57a3d 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n" +
+        for (l in var0.split("\n")) {
+            SlowHash.cnSlowHash(BinHexUtils.hexToByteArray(l.split(" ")[1]).toUByteArray(), res, 0)
+            val good = BinHexUtils.binaryToHex(res.toByteArray()).equals(l.split(" ")[0], true)
+            assertTrue(good, "Hash for CNSlowHash Variant 0 fails!")
+        }
+    }
+
+    @Test
+    fun `Slow Hash V1`() {
+        val res = UByteArray(32)
+
+        val var0 = "b5a7f63abb94d07d1a6445c36c07c7e8327fe61b1647e391b4c7edae5de57a3d 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n" +
                 "80563c40ed46575a9e44820d93ee095e2851aa22483fd67837118c6cd951ba61 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000\n" +
                 "5bb40c5880cef2f739bdb6aaaf16161eaae55530e7b10d7ea996b751a299e949 8519e039172b0d70e5ca7b3383d6b3167315a422747b73f019cf9528f0fde341fd0f2a63030ba6450525cf6de31837669af6f1df8131faf50aaab8d3a7405589\n" +
                 "613e638505ba1fd05f428d5c9f8e08f8165614342dac419adc6a47dce257eb3e 37a636d7dafdf259b7287eddca2f58099e98619d2f99bdb8969d7b14498102cc065201c8be90bd777323f449848b215d2977c92c4c1c2da36ab46b2e389689ed97c18fec08cd3b03235c5e4c62a37ad88c7b67932495a71090e85dd4020a9300\n" +
                 "ed082e49dbd5bbe34a3726a0d1dad981146062b39d36d62c71eb1ed8ab49459b 38274c97c45a172cfc97679870422e3a1ab0784960c60514d816271415c306ee3a3ed1a77e31f6a885c3cb"
 
-        val var2 = "353fdc068fd47b03c04b9431e005e00b68c2168a3cc7335c8b9b308156591a4f 5468697320697320612074657374205468697320697320612074657374205468697320697320612074657374\n" +
+        for (l in var0.split("\n")) {
+            SlowHash.cnSlowHash(BinHexUtils.hexToByteArray(l.split(" ")[1]).toUByteArray(), res, 1)
+            val good = BinHexUtils.binaryToHex(res.toByteArray()).equals(l.split(" ")[0], true)
+            assertTrue(good, "Hash for CNSlowHash Variant 1 fails!")
+        }
+    }
+
+    @Test
+    fun `Slow Hash V2`() {
+        val res = UByteArray(32)
+
+        val var0 = "353fdc068fd47b03c04b9431e005e00b68c2168a3cc7335c8b9b308156591a4f 5468697320697320612074657374205468697320697320612074657374205468697320697320612074657374\n" +
                 "72f134fc50880c330fe65a2cb7896d59b2e708a0221c6a9da3f69b3a702d8682 4c6f72656d20697073756d20646f6c6f722073697420616d65742c20636f6e73656374657475722061646970697363696e67\n" +
                 "410919660ec540fc49d8695ff01f974226a2a28dbbac82949c12f541b9a62d2f 656c69742c2073656420646f20656975736d6f642074656d706f7220696e6369646964756e74207574206c61626f7265\n" +
                 "4472fecfeb371e8b7942ce0378c0ba5e6d0c6361b669c587807365c787ae652d 657420646f6c6f7265206d61676e6120616c697175612e20557420656e696d206164206d696e696d2076656e69616d2c\n" +
@@ -33,20 +55,10 @@ class SlowHashTest {
                 "12a794c1aa13d561c9c6111cee631ca9d0a321718d67d3416add9de1693ba41e 4578636570746575722073696e74206f6363616563617420637570696461746174206e6f6e2070726f6964656e742c\n" +
                 "2659ff95fc74b6215c1dc741e85b7a9710101b30620212f80eb59c3c55993f9d 73756e7420696e2063756c706120717569206f666669636961206465736572756e74206d6f6c6c697420616e696d20696420657374206c61626f72756d2e"
 
-
-        val ts = Array(3) {
-            when (it) {
-                0 -> Pair(var0, 0)
-                1 -> Pair(var1, 1)
-                else -> Pair(var2, 2)
-            }
-        }
-        for(t in ts){
-            for (l in t.first.split("\n")) {
-                SlowHash.cnSlowHash(BinHexUtils.hexToByteArray(l.split(" ")[1]).toUByteArray(), res, t.second)
-                val good = BinHexUtils.binaryToHex(res.toByteArray()).equals(l.split(" ")[0], true)
-                assertTrue(good, "Hash for CNSlowHash Veriant ${t.second} fails!")
-            }
+        for (l in var0.split("\n")) {
+            SlowHash.cnSlowHash(BinHexUtils.hexToByteArray(l.split(" ")[1]).toUByteArray(), res, 2)
+            val good = BinHexUtils.binaryToHex(res.toByteArray()).equals(l.split(" ")[0], true)
+            assertTrue(good, "Hash for CNSlowHash Variant 2 fails!")
         }
     }
 }

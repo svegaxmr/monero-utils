@@ -4,7 +4,7 @@ package com.svega.moneroutils.crypto.slowhash
 object Groestl {
 
     @ExperimentalUnsignedTypes
-    class GSHashState{
+    class GSHashState {
         val chaining = Scratchpad.getScratchpad(Groestl.SIZE512).getPointer(0).toUIntPointer()            /* actual state */
         var blockCounter1 = 0u
         var blockCounter2 = 0u
@@ -13,6 +13,7 @@ object Groestl {
         var bitsInLastByte = 0    /* no. of message bits in last byte of
 			       data buffer */
     }
+
     private val T = uintArrayOf(0xa5f432c6u, 0xc6a597f4u, 0x84976ff8u, 0xf884eb97u, 0x99b05eeeu, 0xee99c7b0u, 0x8d8c7af6u, 0xf68df78cu, 0xd17e8ffu, 0xff0de517u, 0xbddc0ad6u, 0xd6bdb7dcu, 0xb1c816deu, 0xdeb1a7c8u, 0x54fc6d91u, 0x915439fcu,
             0x50f09060u, 0x6050c0f0u, 0x3050702u, 0x2030405u, 0xa9e02eceu, 0xcea987e0u, 0x7d87d156u, 0x567dac87u, 0x192bcce7u, 0xe719d52bu, 0x62a613b5u, 0xb56271a6u, 0xe6317c4du, 0x4de69a31u, 0x9ab559ecu, 0xec9ac3b5u,
             0x45cf408fu, 0x8f4505cfu, 0x9dbca31fu, 0x1f9d3ebcu, 0x40c04989u, 0x894009c0u, 0x879268fau, 0xfa87ef92u, 0x153fd0efu, 0xef15c53fu, 0xeb2694b2u, 0xb2eb7f26u, 0xc940ce8eu, 0x8ec90740u, 0xb1de6fbu, 0xfb0bed1du,
@@ -50,28 +51,28 @@ object Groestl {
     private const val LENGTHFIELDLEN = ROWS
     private const val COLS512 = 8
 
-    const val SIZE512 = (ROWS*COLS512)
+    const val SIZE512 = (ROWS * COLS512)
 
     private const val HASH_BIT_LEN = 256
 
-    private fun ROTL32(v: UInt, n: Int) = (((v shl n) or (v shr (32-n))) and 0xffffffffu)
+    private fun ROTL32(v: UInt, n: Int) = (((v shl n) or (v shr (32 - n))) and 0xffffffffu)
 
 
-    private fun u32BIG(a: UInt)	=
-            ((ROTL32(a,8) and 0x00FF00FFu) or
-            (ROTL32(a,24) and 0xFF00FF00u))
+    private fun u32BIG(a: UInt) =
+            ((ROTL32(a, 8) and 0x00FF00FFu) or
+                    (ROTL32(a, 24) and 0xFF00FF00u))
 
 
 /* NIST API begin */
 
 
-    val indices_cyclic= ubyteArrayOf(0u,1u,2u,3u,4u,5u,6u,7u,0u,1u,2u,3u,4u,5u,6u)
+    val indices_cyclic = ubyteArrayOf(0u, 1u, 2u, 3u, 4u, 5u, 6u, 7u, 0u, 1u, 2u, 3u, 4u, 5u, 6u)
 
-    private fun COLUMN(x: UBytePointer, y: UIntPointer, i: Int, c0: Int, c1: Int, c2: Int, c3: Int, c4: Int, c5: Int, c6: Int, c7: Int){
-        var tv1 = T[(2u * x[4*c1+1]).toInt()]
-        var tv2 = T[(2u * x[4*c1+1]+1u).toInt()]
-        var tu = T[(2u * x[4*c0+0]).toInt()]
-        var tl = T[(2u * x[4*c0+0]+1u).toInt()]
+    private fun COLUMN(x: UBytePointer, y: UIntPointer, i: Int, c0: Int, c1: Int, c2: Int, c3: Int, c4: Int, c5: Int, c6: Int, c7: Int) {
+        var tv1 = T[(2u * x[4 * c1 + 1]).toInt()]
+        var tv2 = T[(2u * x[4 * c1 + 1] + 1u).toInt()]
+        var tu = T[(2u * x[4 * c0 + 0]).toInt()]
+        var tl = T[(2u * x[4 * c0 + 0] + 1u).toInt()]
         var t: UInt
         //ROTATE_COLUMN_DOWN(tv1,tv2,1,t)
         var amountBytes = 1
@@ -80,8 +81,8 @@ object Groestl {
         tv1 = t
         tu = tu xor tv1
         tl = tl xor tv2
-        tv1 = T[(2u * x[4*c2+2]).toInt()]
-        tv2 = T[(2u * x[4*c2+2]+1u).toInt()]
+        tv1 = T[(2u * x[4 * c2 + 2]).toInt()]
+        tv2 = T[(2u * x[4 * c2 + 2] + 1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,2,t)
         amountBytes = 2
         t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
@@ -89,8 +90,8 @@ object Groestl {
         tv1 = t
         tu = tu xor tv1
         tl = tl xor tv2
-        tv1 = T[(2u * x[4*c3+3]).toInt()]
-        tv2 = T[(2u * x[4*c3+3]+1u).toInt()]
+        tv1 = T[(2u * x[4 * c3 + 3]).toInt()]
+        tv2 = T[(2u * x[4 * c3 + 3] + 1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,3,t)=
         amountBytes = 3
         t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
@@ -98,10 +99,10 @@ object Groestl {
         tv1 = t
         tu = tu xor tv1
         tl = tl xor tv2
-        tl = tl xor T[(2u * x[4*c4+0]).toInt()]
-        tu = tu xor T[(2u * x[4*c4+0]+1u).toInt()]
-        tv1 = T[(2u * x[4*c5+1]).toInt()]
-        tv2 = T[(2u * x[4*c5+1]+1u).toInt()]
+        tl = tl xor T[(2u * x[4 * c4 + 0]).toInt()]
+        tu = tu xor T[(2u * x[4 * c4 + 0] + 1u).toInt()]
+        tv1 = T[(2u * x[4 * c5 + 1]).toInt()]
+        tv2 = T[(2u * x[4 * c5 + 1] + 1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,1,t)
         amountBytes = 1
         t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
@@ -109,8 +110,8 @@ object Groestl {
         tv1 = t
         tl = tl xor tv1
         tu = tu xor tv2
-        tv1 = T[(2u * x[4*c6+2]).toInt()]
-        tv2 = T[(2u * x[4*c6+2]+1u).toInt()]
+        tv1 = T[(2u * x[4 * c6 + 2]).toInt()]
+        tv2 = T[(2u * x[4 * c6 + 2] + 1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,2,t)
         amountBytes = 2
         t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
@@ -118,8 +119,8 @@ object Groestl {
         tv1 = t
         tl = tl xor tv1
         tu = tu xor tv2
-        tv1 = T[(2u * x[4*c7+3]).toInt()]
-        tv2 = T[(2u * x[4*c7+3]+1u).toInt()]
+        tv1 = T[(2u * x[4 * c7 + 3]).toInt()]
+        tv2 = T[(2u * x[4 * c7 + 3] + 1u).toInt()]
         //ROTATE_COLUMN_DOWN(tv1,tv2,3,t)
         amountBytes = 3
         t = (tv1 shl (8 * amountBytes)) or (tv2 shr (8 * (4 - amountBytes)))
@@ -128,13 +129,13 @@ object Groestl {
         tl = tl xor tv1
         tu = tu xor tv2
         y[i] = tu
-        y[i+1] = tl
+        y[i + 1] = tl
     }
 
     private fun init(ctx: GSHashState) {
 
         /* set initial value */
-        ctx.chaining[2*COLS512-1] = u32BIG(HASH_BIT_LEN.toUInt())
+        ctx.chaining[2 * COLS512 - 1] = u32BIG(HASH_BIT_LEN.toUInt())
 
         /* set other variables */
         ctx.bufPtr = 0
@@ -145,8 +146,8 @@ object Groestl {
 
     private fun update(ctx: GSHashState, input: UBytePointer, databitlen: ULong) {
         var index = 0
-        val msglen = (databitlen/8u).toInt()
-        val rem = (databitlen%8u).toInt()
+        val msglen = (databitlen / 8u).toInt()
+        val rem = (databitlen % 8u).toInt()
 
         /* if the buffer contains data that has not yet been digested, first
            add data to buffer until full */
@@ -169,8 +170,8 @@ object Groestl {
         }
 
         /* digest bulk of message */
-        transform(ctx, (input+index).toUBytePointer(), msglen-index)
-        index += ((msglen-index)/SIZE512)*SIZE512
+        transform(ctx, (input + index).toUBytePointer(), msglen - index)
+        index += ((msglen - index) / SIZE512) * SIZE512
 
         /* store remaining data in buffer */
         while (index < msglen) {
@@ -196,14 +197,14 @@ object Groestl {
         x32[10] = x32[10] xor (0x00000050u xor r)
         x32[12] = x32[12] xor (0x00000060u xor r)
         x32[14] = x32[14] xor (0x00000070u xor r)
-        COLUMN(x,y, 0,  0,  2,  4,  6,  9, 11, 13, 15)
-        COLUMN(x,y, 2,  2,  4,  6,  8, 11, 13, 15,  1)
-        COLUMN(x,y, 4,  4,  6,  8, 10, 13, 15,  1,  3)
-        COLUMN(x,y, 6,  6,  8, 10, 12, 15,  1,  3,  5)
-        COLUMN(x,y, 8,  8, 10, 12, 14,  1,  3,  5,  7)
-        COLUMN(x,y,10, 10, 12, 14,  0,  3,  5,  7,  9)
-        COLUMN(x,y,12, 12, 14,  0,  2,  5,  7,  9, 11)
-        COLUMN(x,y,14, 14,  0,  2,  4,  7,  9, 11, 13)
+        COLUMN(x, y, 0, 0, 2, 4, 6, 9, 11, 13, 15)
+        COLUMN(x, y, 2, 2, 4, 6, 8, 11, 13, 15, 1)
+        COLUMN(x, y, 4, 4, 6, 8, 10, 13, 15, 1, 3)
+        COLUMN(x, y, 6, 6, 8, 10, 12, 15, 1, 3, 5)
+        COLUMN(x, y, 8, 8, 10, 12, 14, 1, 3, 5, 7)
+        COLUMN(x, y, 10, 10, 12, 14, 0, 3, 5, 7, 9)
+        COLUMN(x, y, 12, 12, 14, 0, 2, 5, 7, 9, 11)
+        COLUMN(x, y, 14, 14, 0, 2, 4, 7, 9, 11, 13)
     }
 
     private fun RND512Q(x: UBytePointer, y: UIntPointer, r: UInt) {
@@ -224,14 +225,14 @@ object Groestl {
         x32[13] = x32[13] xor (0x9fffffffu xor r)
         x32[14] = x32[14].inv()
         x32[15] = x32[15] xor (0x8fffffffu xor r)
-        COLUMN(x,y, 0,  2,  6, 10, 14,  1,  5,  9, 13)
-        COLUMN(x,y, 2,  4,  8, 12,  0,  3,  7, 11, 15)
-        COLUMN(x,y, 4,  6, 10, 14,  2,  5,  9, 13,  1)
-        COLUMN(x,y, 6,  8, 12,  0,  4,  7, 11, 15,  3)
-        COLUMN(x,y, 8, 10, 14,  2,  6,  9, 13,  1,  5)
-        COLUMN(x,y,10, 12,  0,  4,  8, 11, 15,  3,  7)
-        COLUMN(x,y,12, 14,  2,  6, 10, 13,  1,  5,  9)
-        COLUMN(x,y,14,  0,  4,  8, 12, 15,  3,  7, 11)
+        COLUMN(x, y, 0, 2, 6, 10, 14, 1, 5, 9, 13)
+        COLUMN(x, y, 2, 4, 8, 12, 0, 3, 7, 11, 15)
+        COLUMN(x, y, 4, 6, 10, 14, 2, 5, 9, 13, 1)
+        COLUMN(x, y, 6, 8, 12, 0, 4, 7, 11, 15, 3)
+        COLUMN(x, y, 8, 10, 14, 2, 6, 9, 13, 1, 5)
+        COLUMN(x, y, 10, 12, 0, 4, 8, 11, 15, 3, 7)
+        COLUMN(x, y, 12, 14, 2, 6, 10, 13, 1, 5, 9)
+        COLUMN(x, y, 14, 0, 4, 8, 12, 15, 3, 7, 11)
     }
 
     private fun F512(h: UIntPointer, m: UIntPointer) {
@@ -240,7 +241,7 @@ object Groestl {
         val y = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
         val z = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
 
-        for (i in 0 until 2*COLS512) {
+        for (i in 0 until 2 * COLS512) {
             z[i] = m[i]
             Ptmp[i] = h[i] xor m[i]
         }
@@ -270,7 +271,7 @@ object Groestl {
         RND512P(y.toUBytePointer(), Ptmp, 0x00000009u)
 
         /* compute P(h+m) + Q(m) + h */
-        for (i in 0 until 2*COLS512) {
+        for (i in 0 until 2 * COLS512) {
             h[i] = h[i] xor Ptmp[i] xor Qtmp[i]
         }
     }
@@ -279,7 +280,7 @@ object Groestl {
         var msglen = msglen_
         var input = input_
         /* digest message, one block at a time */
-        while (msglen >= SIZE512){
+        while (msglen >= SIZE512) {
             F512(ctx.chaining, input.toUIntPointer())
 
             /* increment block counter */
@@ -292,11 +293,11 @@ object Groestl {
     }
 
     private fun outputTransformation(ctx: GSHashState) {
-        val temp = Scratchpad.getScratchpad(4*2*COLS512).getPointer(0).toUIntPointer()
-        val y = Scratchpad.getScratchpad(4*2*COLS512).getPointer(0).toUIntPointer()
-        val z = Scratchpad.getScratchpad(4*2*COLS512).getPointer(0).toUIntPointer()
+        val temp = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
+        val y = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
+        val z = Scratchpad.getScratchpad(4 * 2 * COLS512).getPointer(0).toUIntPointer()
 
-        for (j in 0 until 2*COLS512) {
+        for (j in 0 until 2 * COLS512) {
             temp[j] = ctx.chaining[j]
         }
         RND512P(temp.toUBytePointer(), y, 0x00000000u)
@@ -309,7 +310,7 @@ object Groestl {
         RND512P(y.toUBytePointer(), z, 0x00000007u)
         RND512P(z.toUBytePointer(), y, 0x00000008u)
         RND512P(y.toUBytePointer(), temp, 0x00000009u)
-        for (j in 0 until 2*COLS512) {
+        for (j in 0 until 2 * COLS512) {
             ctx.chaining[j] = ctx.chaining[j] xor temp[j]
         }
     }

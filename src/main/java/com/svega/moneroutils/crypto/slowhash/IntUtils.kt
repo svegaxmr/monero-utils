@@ -9,6 +9,7 @@ object IntUtils {
     fun loDword(value: ULong): ULong {
         return value and 0xFFFFFFFFu
     }
+
     fun mul128(mult: ULong, cand: ULong): Pair<ULong, ULong> {
 
         val x0 = loDword(mult)

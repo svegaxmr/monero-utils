@@ -1,5 +1,7 @@
 package com.svega.moneroutils
 
+import com.svega.moneroutils.exceptions.MoneroException
+
 @ExperimentalUnsignedTypes
 object BinHexUtils {
     fun hexToByteArray(s: String): ByteArray {
@@ -7,7 +9,7 @@ object BinHexUtils {
 
         if (len % 2 != 0)
             throw MoneroException("Hex string has invalid length!")
-        if(s.isEmpty())
+        if (s.isEmpty())
             return byteArrayOf()
 
         val out = ByteArray(len / 2)
@@ -34,7 +36,7 @@ object BinHexUtils {
 
         if (len % 2 != 0)
             throw MoneroException("Hex string has invalid length!")
-        if(s.isEmpty())
+        if (s.isEmpty())
             return ubyteArrayOf()
 
         val out = UByteArray(len / 2)
@@ -70,7 +72,7 @@ object BinHexUtils {
     fun convertHexToString(hex: String) = String(hexToByteArray(hex))
 
     private val hexCode = "0123456789ABCDEF".toCharArray()
-    private fun printHexBinary(data: ByteArray): String{
+    private fun printHexBinary(data: ByteArray): String {
         val r = StringBuilder(data.size * 2)
         for (b in data) {
             r.append(hexCode[b.toInt() shr 4 and 0xF])
@@ -79,9 +81,9 @@ object BinHexUtils {
         return r.toString()
     }
 
-    fun binaryToHex(bin: ByteArray)  = printHexBinary(bin)
+    fun binaryToHex(bin: ByteArray) = printHexBinary(bin)
 
-    fun binaryToHex(bin: UByteArray)  = printHexBinary(bin.asByteArray())
+    fun ubinaryToHex(bin: UByteArray) = printHexBinary(bin.asByteArray())
 
     fun binaryToHex(bin: List<Byte>) = printHexBinary(bin.toByteArray())
 }

@@ -10,15 +10,15 @@ import java.nio.file.Paths
 class JHTest {
 
     @Test
-    fun hash_extra_jh() {
+    fun `JH Test`() {
         val lines = Files.readAllLines(Paths.get("C:\\wksp\\monero-utils\\src\\test\\java\\com\\svega\\moneroutils\\crypto\\slowhash\\jh_tests.txt"))
         val out = Scratchpad.getScratchpad(32)
-        for(t in lines){
+        for (t in lines) {
             val spl = t.split(" ")
             val data = BinHexUtils.hexToByteArray(spl[1]).toUByteArray()
             val don = Scratchpad.getScratchpad(data.size)
             don[0] = data
-            JH.hashExtraJH(don.getPointer(0), data.size, out.getPointer(0))
+            JH.jh256Hash(out.getPointer(0), don.getPointer(0), data.size)
             val get = BinHexUtils.binaryToHex(out[0, out.size].toByteArray())
             assertTrue("${spl[1]} fails: expect ${spl[0]}, get $get", get.equals(spl[0], ignoreCase = true))
         }

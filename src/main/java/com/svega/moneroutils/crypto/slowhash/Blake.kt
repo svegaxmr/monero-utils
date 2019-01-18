@@ -156,12 +156,11 @@ object Blake {
 
     private val padding: UBytePointer = {
         val p = ubyteArrayOf(
-                0x80u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,
-                0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u,0u
+                0x80u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u,
+                0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u
         )
-        val sp = Scratchpad.getScratchpad(p.size)
-        sp[0] = p
-       sp.getPointer(0)
+        val sp = Scratchpad.wrap(p)
+        sp.getPointer(0)
     }()
 
     private fun blake256FinalH(S: BLKState, digest: UBytePointer, pa: UByte, pb: UByte) {
@@ -197,9 +196,9 @@ object Blake {
         S.t[0] -= 64u
         blake256Update(S, msglen.getPointer(0), 64u)
 
-        U32TO8(digest,  0, S.h[0])
-        U32TO8(digest,  4, S.h[1])
-        U32TO8(digest,  8, S.h[2])
+        U32TO8(digest, 0, S.h[0])
+        U32TO8(digest, 4, S.h[1])
+        U32TO8(digest, 8, S.h[2])
         U32TO8(digest, 12, S.h[3])
         U32TO8(digest, 16, S.h[4])
         U32TO8(digest, 20, S.h[5])
@@ -211,6 +210,7 @@ object Blake {
         blake256FinalH(S, digest, 0x81u, 0x01u)
     }
 
+    @JvmStatic
     fun blake256Hash(out: UBytePointer, din: UBytePointer, inlen: ULong) {
         val S = BLKState()
         blake256Init(S)

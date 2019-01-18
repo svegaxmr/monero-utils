@@ -5,45 +5,64 @@ import com.svega.moneroutils.crypto.slowhash.AESB.aesbSingleRound
 import com.svega.moneroutils.crypto.slowhash.IntUtils.mul128
 import com.svega.moneroutils.crypto.slowhash.SlowHash.INIT_SIZE_BYTE
 import com.svega.moneroutils.crypto.slowhash.SlowHash.cnSlowHash
+import com.svega.moneroutils.exceptions.HashingException
 import com.svega.moneroutils.toDouble
+import java.text.DecimalFormat
+import kotlin.system.exitProcess
 
 @ExperimentalUnsignedTypes
 object SlowHash {
     private const val MEMORY = (1 shl 21) // 2MB scratchpad
-    private const val ITER = (1 shl 20)
+    private const val ITERATIONS = (1 shl 20)
     private const val AES_BLOCK_SIZE = 16
     private const val AES_KEY_SIZE = 32
     private const val INIT_SIZE_BLK = 8
     const val INIT_SIZE_BYTE = (INIT_SIZE_BLK * AES_BLOCK_SIZE)
 
-    private val extra_hashes = Array(4) { { x: Scratchpad, y: Int, z: UBytePointer -> when(it) {
-        0 -> Blake.blake256Hash(z, x.getPointer(0), y.toULong())
-        1 -> Groestl.groestl256Hash(z, x.getPointer(0), y.toULong())
-        2 -> JH.hashExtraJH(x.getPointer(0), y, z)
-        else -> Skein.hashExtraSkein(x.getPointer(0), y.toULong(), z)
+    private val extra_hashes = Array(4) {
+        { x: Scratchpad, y: Int, z: UBytePointer ->
+            when (it) {
+                0 -> Blake.blake256Hash(z, x.getPointer(0), y.toULong())
+                1 -> Groestl.groestl256Hash(z, x.getPointer(0), y.toULong())
+                2 -> JH.jh256Hash(z, x.getPointer(0), y.toULong())
+                else -> Skein.skein256Hash(z, x.getPointer(0), y.toULong())
+            }
+        }
     }
-    }}
 
-    private fun mul(a: ULongPointer, b: ULongPointer, res: ULongPointer) {
+    private fun mul(a: ULongArray, b: ULongArray, res: ULongArray) {
         val (hi, lo) = mul128(a[0], b[0])
         res[0] = hi
         res[1] = lo
     }
 
-    private fun copyBlock(dst: UBytePointer, src: UBytePointer){
-        dst[0] = src[0, AES_BLOCK_SIZE]
+    private fun copyBlock(dst: ULongArray, src: ULongPointer) {
+        dst[0] = src[0]
+        dst[1] = src[1]
     }
 
-    private fun sumHalfBlocks(a: ULongPointer, b: ULongPointer) {
+    private fun copyBlock(dst: ULongPointer, src: ULongArray) {
+        dst[0] = src[0]
+        dst[1] = src[1]
+    }
+
+    private fun copyBlock(dst: ULongArray, src: ULongArray) {
+        dst[0] = src[0]
+        dst[1] = src[1]
+    }
+
+    private fun sumHalfBlocks(a: ULongArray, b: ULongArray) {
         a[0] = a[0] + b[0]
         a[1] = a[1] + b[1]
     }
 
-    private val t = Scratchpad.getScratchpad(16)
-    private fun swapBlocks(a: UBytePointer, b: UBytePointer){
-        t[0] = a[0, 16]
-        a[0] = b[0, 16]
-        b[0] = t[0, 16]
+    private fun swapBlocks(a: ULongArray, b: ULongArray) {
+        val temp1 = a[0]
+        val temp2 = a[1]
+        a[0] = b[0]
+        a[1] = b[1]
+        b[0] = temp1
+        b[1] = temp2
     }
 
     private fun xor16(left: UBytePointer, right: UBytePointer) {
@@ -52,57 +71,90 @@ object SlowHash {
         }
     }
 
-    private const val MASK = (((MEMORY / AES_BLOCK_SIZE) - 1) shl 4)
-    private fun stateIndex(x: UIntPointer) = (x[0].toInt() and MASK)
+    private fun xorl(left: ULongPointer, right: ULongArray) {
+        left[0] = left[0] xor right[0]
+        left[1] = left[1] xor right[1]
+    }
 
-    fun cnSlowHash(data: UByteArray, hash: UByteArray, variant: Int){
-        val longState = Scratchpad.getScratchpad(MEMORY)
+    private fun xorl(left: ULongArray, right: ULongPointer) {
+        left[0] = left[0] xor right[0]
+        left[1] = left[1] xor right[1]
+    }
+
+    private fun xorl(left: ULongArray, right: ULongArray) {
+        left[0] = left[0] xor right[0]
+        left[1] = left[1] xor right[1]
+    }
+
+    private const val MASK = (((MEMORY / AES_BLOCK_SIZE) - 1) shl 4)
+    private fun stateIndex(x: ULongArray) = (x[0].toInt() and MASK)
+
+    /**
+     * Does the cn_clow_hash function variant [variant] on [data] and returns [hash]
+     * @param data The data to hash.
+     * @param hash Where the hash will be returned
+     * @param variant The variant of the function with which to do the hashing
+     * @throws HashingException If [data] is not at least 43 bytes for variant 1, or if an invalid variant is chosen
+     */
+    @JvmStatic
+    fun cnSlowHash(data: UByteArray, hash: UByteArray, variant: Int) {
+        if((variant > 2) or (variant < 0)){
+            throw HashingException("Variant $variant is not a valid variant!")
+        }
+
+        val longState = Scratchpad.getUnbackedScratchpad(MEMORY)
         val state = HashState()
         val text = Scratchpad.getScratchpad(INIT_SIZE_BYTE)
-        val a = Scratchpad.getScratchpad(AES_BLOCK_SIZE).getPointer(0)
-        val b = Scratchpad.getScratchpad(AES_BLOCK_SIZE * 2).getPointer(0)
-        val bOff16 = (b + 16).toUBytePointer()
-        val c = Scratchpad.getScratchpad(AES_BLOCK_SIZE).getPointer(0)
-        val c1 = Scratchpad.getScratchpad(AES_BLOCK_SIZE).getPointer(0)
-        val d = Scratchpad.getScratchpad(AES_BLOCK_SIZE).getPointer(0)
-        val au = a.toUIntPointer()
-        val al = a.toULongPointer()
-        val bl = b.toULongPointer()
-        val cl = c.toULongPointer()
-        val c1i = c1.toUIntPointer()
-        val c1l = c1.toULongPointer()
-        val dl = d.toULongPointer()
-        val oaesCtx = OAES.oaesAlloc()
+        val cl = ULongArray(AES_BLOCK_SIZE / 8)
+        val dl = ULongArray(AES_BLOCK_SIZE / 8)
+        val al = ULongArray(AES_BLOCK_SIZE / 8)
+        val bl = ULongArray(AES_BLOCK_SIZE * 2 / 8)
+        val c1l = ULongArray(AES_BLOCK_SIZE / 8)
 
-        val spz = if(variant == 1) UByteArrayScratchpad(data.size) else Scratchpad.getScratchpad(data.size)//needed for tweak1_2 pointing at 35
+        val spz = if (variant == 1) UByteArrayScratchpad(data.size) else Scratchpad.getScratchpad(data.size)//needed for tweak1_2 pointing at 35
         spz[0] = data
         Keccak.keccak(spz.getPointer(0), state.b)
 
-        text[0] = state.init[0, INIT_SIZE_BYTE]
+        var ints = OAES.oaesKeyImportData(state.b[0, AES_KEY_SIZE])
 
-        OAES.oaesKeyImportData(oaesCtx, state.b[0, AES_KEY_SIZE])
-
-        val tweak1_2 = when {
-                variant != 1 -> 0uL
-                data.size < 43 -> throw RuntimeException("Data must be at least 43 bytes")
-                else -> state.w[24] xor spz.getPointer(35).toULongPointer()[0]
-            }
-
-        var division_result = 0uL
-        var sqrt_result = 0uL
-        if (variant >= 2){
-            bl[2] = state.w[8] xor state.w[10]
-            bl[3] = state.w[9] xor state.w[11]
-            division_result = state.w[12]
-            sqrt_result = state.w[13]
+        val tweak12 = when {
+            variant != 1 -> 0uL
+            data.size < 43 -> throw HashingException("Data must be at least 43 bytes, is ${data.size}")
+            else -> state.w[24] xor spz.getPointer(35).toULongPointer()[0]
         }
 
-        val tpj = text.getPointer(0)
+        var divisionResult = 0uL
+        var sqrtResult = 0uL
+        if (variant >= 2) {
+            bl[2] = state.w[8] xor state.w[10]
+            bl[3] = state.w[9] xor state.w[11]
+            divisionResult = state.w[12]
+            sqrtResult = state.w[13]
+        }
+
+        fun variant2PortableIntegerMath() {
+            if (variant >= 2) {
+                cl[0] = cl[0] xor divisionResult xor (sqrtResult shl 32)
+                val dividend = c1l[1]
+                val divisor = ((c1l[0] + (sqrtResult shl 1).toUInt()) or 0x80000001U).toUInt()
+                divisionResult = ((dividend / divisor).toUInt()) + (((dividend % divisor).toULong()) shl 32)
+                val sqrtInput = c1l[0] + divisionResult
+                sqrtResult = (Math.sqrt(sqrtInput.toDouble() + 18446744073709551616.0) * 2.0 - 8589934592.0).toLong().toULong()
+                val s = sqrtResult shr 1
+                val b1 = sqrtResult and 1u
+                val r2 = s * (s + b1) + (sqrtResult shl 32)
+                sqrtResult += (if (r2 + (1UL shl 32) < sqrtInput - s) 1u else 0u) - (if (r2 + b1 > sqrtInput) 1u else 0u)
+            }
+        }
+
+
+        text[0] = state.init[0, INIT_SIZE_BYTE]
+        val textPointerInts = text.getPointer().toUIntPointer()
         for (i in 0 until MEMORY / INIT_SIZE_BYTE) {
-            tpj.offset = 0
+            textPointerInts.offset = 0
             for (j in 0 until INIT_SIZE_BLK) {
-                AESB.aesbPseudoRound(tpj, tpj, oaesCtx.key.expData)
-                tpj.offset += AES_BLOCK_SIZE
+                AESB.aesbPseudoRound(textPointerInts, ints)
+                textPointerInts.offset += AES_BLOCK_SIZE
             }
             longState[i * INIT_SIZE_BYTE] = text.getRawArray()
         }
@@ -112,83 +164,80 @@ object SlowHash {
         bl[0] = state.w[2] xor state.w[6]
         bl[1] = state.w[3] xor state.w[7]
 
-        val lsp = longState.getPointer(0)
+        val longStatePointer = longState.getPointer(0)
+        val longStatePointerInts = longStatePointer.toUIntPointer()
+        val longStatePointerLongs = longStatePointer.toULongPointer()
 
-        for (i in 0 until ITER / 2) {
-            lsp.offset = stateIndex(au)
-            aesbSingleRound(lsp, lsp, a)
-            copyBlock(c1, lsp)
+        for (i in 0 until ITERATIONS / 2) {
+            longStatePointer.offset = stateIndex(al)
+            longStatePointerLongs.offset = longStatePointer.offset
+            longStatePointerInts.offset = longStatePointer.offset
+            aesbSingleRound(longStatePointerInts, al)
+            copyBlock(c1l, longStatePointerLongs)
 
-            val oldOff1 = lsp.offset
-            lsp.offset = 0
-            variant2PortableShuffleAdd(lsp, oldOff1, al, bl, variant)
-            lsp.offset = oldOff1
-
-            xor16(lsp, b)
-
-            if (variant == 1){
-                val tmp = lsp[11].toInt()
-                val index = (((tmp shr 3) and 6) or (tmp and 1)) shl 1
-                lsp[11] = (tmp xor ((0x75310 shr index) and 0x30)).toUByte()
+            if (variant >= 2) {
+                longStatePointerLongs.offset = 0
+                variant2PortableShuffleAdd(longStatePointerLongs, longStatePointer.offset, al, bl)
+                longStatePointerLongs.offset = longStatePointer.offset
             }
 
-            lsp.offset = stateIndex(c1i)
-            copyBlock(c, lsp)
+            xorl(longStatePointerLongs, bl)
+
+            if (variant == 1) {
+                val tmp = longStatePointer[11].toInt()
+                val index = (((tmp shr 3) and 6) or (tmp and 1)) shl 1
+                longStatePointer[11] = (tmp xor ((0x75310 shr index) and 0x30)).toUByte()
+            }
+
+            longStatePointer.offset = stateIndex(c1l)
+            longStatePointerLongs.offset = longStatePointer.offset
+            copyBlock(cl, longStatePointerLongs)
 
             //VARIANT2_PORTABLE_INTEGER_MATH(c, c1); b, ptr
-            if (variant >= 2){
-                cl[0] = cl[0] xor division_result xor (sqrt_result shl 32)
-                val dividend = c1l[1]
-                val divisor = ((c1l[0] + (sqrt_result shl 1).toUInt()) or 0x80000001UL).toUInt()
-                division_result = ((dividend / divisor).toUInt()) + (((dividend % divisor).toULong()) shl 32)
-                val sqrt_input = c1l[0] + division_result
-                sqrt_result = (Math.sqrt(sqrt_input.toDouble() + 18446744073709551616.0) * 2.0 - 8589934592.0).toLong().toULong()
-                val s = sqrt_result shr 1
-                val b1 = sqrt_result and 1u
-                val r2 = s * (s + b1) + (sqrt_result shl 32)
-                sqrt_result += (if(r2 + (1UL shl 32) < sqrt_input - s) 1u else 0u) - (if(r2 + b1 > sqrt_input) 1u else 0u)
-            }
+
+            variant2PortableIntegerMath()
 
             mul(c1l, cl, dl)
-            val oldOff = lsp.offset
             if (variant >= 2) {
-                lsp.offset = oldOff xor 0x10
-                xor16(lsp, d)
-                lsp.offset = oldOff xor 0x20
-                xor16(d, lsp)
+                longStatePointerLongs.offset = longStatePointer.offset xor 0x10
+                xorl(longStatePointerLongs, dl)
+                longStatePointerLongs.offset = longStatePointer.offset xor 0x20
+                xorl(dl, longStatePointerLongs)
+                longStatePointerLongs.offset = 0
+                variant2PortableShuffleAdd(longStatePointerLongs, longStatePointer.offset, al, bl)
             }
-            lsp.offset = 0
-            variant2PortableShuffleAdd(lsp, oldOff, al, bl, variant)
-            lsp.offset = oldOff
 
             sumHalfBlocks(al, dl)
-            swapBlocks(a, c)
-            xor16(a, c)
+            swapBlocks(al, cl)
+            xorl(al, cl)
 
             //technically only for variant 1
             //but we set tweak to 0 if not var1
             //xor by 0 is the original
-            cl[1] = cl[1] xor tweak1_2
+            cl[1] = cl[1] xor tweak12
 
-            copyBlock(lsp, c)
+            longStatePointerLongs.offset = longStatePointer.offset
+            copyBlock(longStatePointerLongs, cl)
 
-            if (variant >= 2) {
-                copyBlock(bOff16, b)
-            }
+            //technically on variant 2, but setting things that aren't used has no effect
+            //if (variant >= 2) {
+            bl[2] = bl[0]
+            bl[3] = bl[1]
+            //}
 
-            copyBlock(b, c1)
+            copyBlock(bl, c1l)
         }
 
         text[0] = state.init[0, INIT_SIZE_BYTE]
-        OAES.oaesKeyImportData(oaesCtx, state.b[32, AES_KEY_SIZE])
-        lsp.offset = 0
+        ints = OAES.oaesKeyImportData(state.b[32, AES_KEY_SIZE])
+        longStatePointerInts.offset = 0
         for (i in 0 until MEMORY / INIT_SIZE_BYTE) {
-            tpj.offset = 0
+            textPointerInts.offset = 0
             for (j in 0 until INIT_SIZE_BLK) {
-                xor16(tpj, lsp)
-                AESB.aesbPseudoRound(tpj, tpj, oaesCtx.key.expData)
-                tpj.offset += AES_BLOCK_SIZE
-                lsp.offset += AES_BLOCK_SIZE
+                xori(textPointerInts, longStatePointerInts)
+                AESB.aesbPseudoRound(textPointerInts, ints)
+                textPointerInts.offset += AES_BLOCK_SIZE
+                longStatePointerInts.offset += AES_BLOCK_SIZE
             }
         }
 
@@ -199,31 +248,38 @@ object SlowHash {
 
         extra_hashes[state.b[0].toInt() and 3](state.state, 200, sp.getPointer(0))
         sp.getRawArray().copyInto(hash)
+
+        longState.close()
     }
 
-    private fun variant2PortableShuffleAdd(basePtr: UBytePointer, offset: Int, al: ULongPointer, bl: ULongPointer, variant: Int) {
-        if (variant >= 2){
-            val chunk1 = (basePtr + (offset xor 0x10)).toULongPointer()
-            val chunk2 = (basePtr + (offset xor 0x20)).toULongPointer()
-            val chunk3 = (basePtr + (offset xor 0x30)).toULongPointer()
+    private fun xori(left: UIntPointer, right: UIntPointer, off: Int = 0) {
+        left[0 + off] = left[0 + off] xor right[0]
+        left[1 + off] = left[1 + off] xor right[1]
+        left[2 + off] = left[2 + off] xor right[2]
+        left[3 + off] = left[3 + off] xor right[3]
+    }
 
-            val chunk1Old0 = chunk1[0]
-            val chunk1Old1 = chunk1[1]
+    private fun variant2PortableShuffleAdd(basePtr: ULongPointer, offset: Int, al: ULongArray, bl: ULongArray) {
+        val off1 = (offset xor 0x10) / 8
+        val off2 = (offset xor 0x20) / 8
+        val off3 = (offset xor 0x30) / 8
 
-            chunk1[0] = chunk3[0] + bl[2]
-            chunk1[1] = chunk3[1] + bl[3]
+        val chunk1Old0 = basePtr[off1]
+        val chunk1Old1 = basePtr[off1 + 1]
 
-            chunk3[0] = chunk2[0] + al[0]
-            chunk3[1] = chunk2[1] + al[1]
+        basePtr[off1] = basePtr[off3] + bl[2]
+        basePtr[off1 + 1] = basePtr[off3 + 1] + bl[3]
 
-            chunk2[0] = chunk1Old0 + bl[0]
-            chunk2[1] = chunk1Old1 + bl[1]
-        }
+        basePtr[off3] = basePtr[off2] + al[0]
+        basePtr[off3 + 1] = basePtr[off2 + 1] + al[1]
+
+        basePtr[off2] = chunk1Old0 + bl[0]
+        basePtr[off2 + 1] = chunk1Old1 + bl[1]
     }
 }
 
 @ExperimentalUnsignedTypes
-fun main(args: Array<String>){ //Benchmark tool
+fun main(args: Array<String>) { //Benchmark tool
     val res = UByteArray(32)
 
     val var0 = "2f8e3df40bd11f9ac90c743ca8e32bb391da4fb98612aa3b6cdc639ee00b31f5 6465206f6d6e69627573206475626974616e64756d\n" +
@@ -257,55 +313,60 @@ fun main(args: Array<String>){ //Benchmark tool
         }
     }
     println("---WARMUP---")
-    for(i in 0 until 5) {
-        for(t in ts){
+    for (i in 0 until 5) {
+        for (t in ts) {
             for (l in t.first.split("\n")) {
                 cnSlowHash(BinHexUtils.hexToUByteArray(l.split(" ")[1]), res, t.second)
+                print('\r')
                 print(l.split(" ")[0])
                 print(": ")
-                print(BinHexUtils.binaryToHex(res))
+                print(BinHexUtils.ubinaryToHex(res))
                 print(": ")
-                println(BinHexUtils.binaryToHex(res).equals(l.split(" ")[0], true))
+                print(BinHexUtils.ubinaryToHex(res).equals(l.split(" ")[0], true))
             }
         }
     }
+    println()
     var a = 0
     val al = IntArray(3)
     val th = LongArray(3)
     println("---START---")
     val total = System.nanoTime()
-    for(i in 0 until 10) {
-        for(t in ts){
+    for (i in 0 until 10) {
+        for (t in ts) {
             for (l in t.first.split("\n")) {
                 val it = System.nanoTime()
                 cnSlowHash(BinHexUtils.hexToUByteArray(l.split(" ")[1]), res, t.second)
                 ++a
                 ++al[t.second]
                 th[t.second] += System.nanoTime() - it
+                print('\r')
                 print(l.split(" ")[0])
                 print(": ")
-                print(BinHexUtils.binaryToHex(res))
+                print(BinHexUtils.ubinaryToHex(res))
                 print(": ")
-                val good = BinHexUtils.binaryToHex(res).equals(l.split(" ")[0], true)
-                println(good)
+                val good = BinHexUtils.ubinaryToHex(res).equals(l.split(" ")[0], true)
+                print(good)
+                if (!good)
+                    exitProcess(-1)
             }
         }
     }
-    println("Took ${(System.nanoTime() - total) / 1e9} seconds")
-    println("Completed $a hashes")
-    println("At ${a / ((System.nanoTime() - total) / 1e9)} h/s")
-    for(i in 0 until 3){
-        println("Variant $i")
-        println("Took ${th[i] / 1e9} seconds")
-        println("Completed ${al[i]} hashes")
-        println("At ${al[i] / (th[i] / 1e9)} h/s")
+    val df = DecimalFormat(".##")
+    println()
+    print("Overall  : ")
+    print("Took ${df.format((System.nanoTime() - total) / 1e9)} seconds ")
+    println("at ${df.format(a / ((System.nanoTime() - total) / 1e9))} h/s")
+    for (i in 0 until 3) {
+        print("Variant $i: ")
+        print("Took ${df.format(th[i] / 1e9)} seconds ")
+        println("at ${df.format(al[i] / (th[i] / 1e9))} h/s")
     }
 }
 
 @ExperimentalUnsignedTypes
-class HashState{
+class HashState {
     val state = Scratchpad.getScratchpad(200)
-    val k = state.getPointer(0, 64)
     val init = state.getPointer(64, INIT_SIZE_BYTE)
     val b = state.getPointer(0)
     val w = state.getPointer(0).toULongPointer()

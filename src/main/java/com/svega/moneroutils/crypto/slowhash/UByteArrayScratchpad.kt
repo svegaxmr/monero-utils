@@ -4,29 +4,29 @@ package com.svega.moneroutils.crypto.slowhash
  * Unaligned accesses, but slower
  */
 @ExperimentalUnsignedTypes
-class UByteArrayScratchpad(data: UByteArray): Scratchpad(data.size) {
+class UByteArrayScratchpad(data: UByteArray) : Scratchpad(data.size) {
+    constructor(size: Int) : this(UByteArray(size))
+
+    private val pad = data
     override fun getRawArray() = pad
 
-    constructor(size: Int): this(UByteArray(size))
-    private val pad = data
-
-    override operator fun plus(off: Int): UBytePointer{
+    override operator fun plus(off: Int): UBytePointer {
         return UBytePointer(this, off)
     }
 
-    override operator fun get(i: Int, size: Int): UByteArray{
+    override operator fun get(i: Int, size: Int): UByteArray {
         return pad.copyOfRange(i, i + size)
     }
 
-    override operator fun set(i: Int, arr: UByteArray){
+    override operator fun set(i: Int, arr: UByteArray) {
         arr.copyInto(destination = pad, destinationOffset = i)
     }
 
-    override operator fun set(i: Int, b: UByte){
+    override operator fun set(i: Int, b: UByte) {
         pad[i] = b
     }
 
-    override operator fun get(i: Int): UByte{
+    override operator fun get(i: Int): UByte {
         return pad[i]
     }
 
@@ -70,5 +70,25 @@ class UByteArrayScratchpad(data: UByteArray): Scratchpad(data.size) {
         pad[offset + 5] = (value shr 40).toUByte()
         pad[offset + 6] = (value shr 48).toUByte()
         pad[offset + 7] = (value shr 56).toUByte()
+    }
+
+    override fun getSwappedUInt(i: Int, size: Int): UIntArray {
+        return UIntArray(size) { x -> getSwappedUInt(i + (x * 4)) }
+    }
+
+    override fun setSwappedUInt(offset: Int, value: UIntArray) {
+        value.forEachIndexed { index: Int, uintVal: UInt ->
+            setSwappedUInt(offset + (index * 4), uintVal)
+        }
+    }
+
+    override fun getSwappedULong(i: Int, size: Int): ULongArray {
+        return ULongArray(size) { x -> getSwappedULong(i + (x * 8)) }
+    }
+
+    override fun setSwappedULong(offset: Int, value: ULongArray) {
+        value.forEachIndexed { index: Int, ulongVal: ULong ->
+            setSwappedULong(offset + (index * 8), ulongVal)
+        }
     }
 }
