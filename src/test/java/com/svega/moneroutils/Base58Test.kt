@@ -20,7 +20,7 @@ class Base58Test{
         val ret = BinHexUtils.hexToUByteArray("12fd12679548b32e028667aa0d41e7076bef275d3085178f75f2cde21a79f625be7356d032ff58698b0e139bb6aaae6d3ddf033302a46b6f28f9ce800028d2e6b5688434f0")
         val returned = Base58.decode(test)
 
-        assertTrue("Decode does not match! ${BinHexUtils.binaryToHex(ret)}," +
-                " ${BinHexUtils.binaryToHex(returned)}",  ret.contentEquals(returned))
+        assertTrue("Decode does not match! ${BinHexUtils.ubinaryToHex(ret)}," +
+                " ${BinHexUtils.ubinaryToHex(returned)}",  ret.contentEquals(returned))
     }
 }
