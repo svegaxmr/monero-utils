@@ -154,8 +154,8 @@ fun Int.varIntData(): ByteArray {
     }
 }
 
-fun SWAP32(x: Int) = ((( (x) and 0x000000ff) shl 24) or (( (x) and 0x0000ff00) shl  8)
-        or (( (x) and 0x00ff0000) shr  8) or (( (x.toLong()) and 0xff000000L) ushr 24).toInt())
+fun SWAP32(x: Int) = ((((x) and 0x000000ff) shl 24) or (((x) and 0x0000ff00) shl 8)
+        or (((x) and 0x00ff0000) shr 8) or (((x.toLong()) and 0xff000000L) ushr 24).toInt())
 
 @ExperimentalUnsignedTypes
 fun SWAP32(x: UInt): UInt = ((( (x) and 0x000000ffu) shl 24) or (( (x) and 0x0000ff00u) shl  8)
@@ -237,7 +237,7 @@ fun ULong.toUByteArray(): UByteArray{
     pad[2] = (this shr 40).toUByte()
     pad[1] = (this shr 48).toUByte()
     pad[0] = (this shr 56).toUByte()
-    val ret = UByteArray(bytes())
+    val ret = UByteArray(bytes().coerceAtLeast(1))
     pad.copyInto(ret, 0, 8 - ret.size, 8)
     return ret
 }
