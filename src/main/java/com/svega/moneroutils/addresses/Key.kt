@@ -1,38 +1,41 @@
 package com.svega.moneroutils.addresses
 
-import com.svega.crypto.ed25519.ge_p3_tobytes
-import com.svega.crypto.ed25519.ge_scalarmult_base
-import com.svega.crypto.ed25519.objects.ge_p3
+import com.svega.crypto.ed25519.ge
+import com.svega.crypto.ed25519.ge_p3
 import com.svega.moneroutils.BinHexUtils
-import com.svega.moneroutils.MoneroException
+import com.svega.moneroutils.exceptions.MoneroException
 import java.io.Serializable
 
 @ExperimentalUnsignedTypes
-data class Key(val data: ByteArray): Serializable {
+data class Key(val data: ByteArray) : Serializable {
     var str: String = ""
         get() {
-            if(field == "")
+            if (field.isEmpty())
                 field = BinHexUtils.binaryToHex(data)
             return field
         }
         private set
-    constructor(str: String): this(BinHexUtils.hexToByteArray(str)){
+
+    constructor(str: String) : this(BinHexUtils.hexToByteArray(str)) {
         this.str = str
     }
+
     init {
-        if(data.size != 32){
+        if (data.size != 32) {
             throw MoneroException("Key data must be 32 bytes")
         }
     }
-    override fun equals(other: Any?): Boolean{
-        if(other == null)
+
+    override fun equals(other: Any?): Boolean {
+        if (other == null)
             return false
-        if(other !is Key)
+        if (other !is Key)
             return false
-        if(!other.data.contentEquals(this.data))
+        if (!other.data.contentEquals(this.data))
             return false
         return true
     }
+
     override fun hashCode(): Int {
         return super.hashCode()
     }
@@ -40,14 +43,15 @@ data class Key(val data: ByteArray): Serializable {
 
 @ExperimentalUnsignedTypes
 typealias PublicKey = Key
+
 @ExperimentalUnsignedTypes
 typealias SecretKey = Key
 
 @ExperimentalUnsignedTypes
-fun SecretKey.getPublic(): PublicKey{
+fun SecretKey.getPublic(): PublicKey {
     val point = ge_p3()
-    ge_scalarmult_base(point, this.data)
-    val public = ByteArray(32)
-    ge_p3_tobytes(public, point)
-    return PublicKey(public)
+    ge.scalarmult_base(point, this.data.asUByteArray())
+    val public = UByteArray(32)
+    ge.p3_tobytes(public, point)
+    return PublicKey(public.asByteArray())
 }
