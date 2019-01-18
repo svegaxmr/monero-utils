@@ -9,24 +9,24 @@ import java.nio.ByteBuffer
 
 
 @ExperimentalUnsignedTypes
-class Transaction private constructor(): MoneroSerializable{
+class Transaction private constructor() : MoneroSerializable {
     lateinit var header: TransactionPrefix
         private set
     var totalOut = XMRAmount(-1)
         private set
     var isHashValid = false
         private set
-    var hash =  ByteArray(0)
+    var hash = ByteArray(0)
         private set
         get() {
-            if(isHashValid)
+            if (isHashValid)
                 return field
-            else{
+            else {
                 val res = ByteArray(32)
                 isHashValid = getTXHash(this, res)
                 field = res
             }
-            return if(isHashValid) field else ByteArray(0)
+            return if (isHashValid) field else ByteArray(0)
         }
 
     override fun toBlob(): ByteArray {
@@ -34,6 +34,7 @@ class Transaction private constructor(): MoneroSerializable{
         b.write(header.toBlob())
         return b.toByteArray()
     }
+
     @ExperimentalUnsignedTypes
     companion object {
         fun parseBlobHeader(blob: ByteArray) = parseBlobHeader(ByteBuffer.wrap(blob).rewind())
@@ -42,25 +43,28 @@ class Transaction private constructor(): MoneroSerializable{
             val tx = Transaction()
             with(tx) {
                 header = TransactionPrefix.parseFromBlob(bb)
-                for(t in header.outs){
+                for (t in header.outs) {
                     totalOut += t.amount
+                }
+                if (header.ver == 2) {//rct
+
                 }
             }
             return tx
         }
 
         var txHashesCalculated = 0
-        fun getTXHash(t: Transaction, res: ByteArray): Boolean{
+        fun getTXHash(t: Transaction, res: ByteArray): Boolean {
             ++txHashesCalculated
             return calculateTXHash(t, res)
         }
 
-        private fun calculateTXHash(t: Transaction, res: ByteArray): Boolean{
-            if(t.header.ver == 1){
+        private fun calculateTXHash(t: Transaction, res: ByteArray): Boolean {
+            if (t.header.ver == 1) {
                 return Hashing.getObjectHash(t, res)
             }
 
-            val hashes = Array(3) {ByteArray(32)}
+            val hashes = Array(3) { ByteArray(32) }
 
             //rct
 

@@ -7,8 +7,8 @@ import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.util.*
 
-class TransactionInput private constructor(): MoneroSerializable{
-    var height  = -1
+class TransactionInput private constructor() : MoneroSerializable {
+    var height = -1
         private set
     var inputType = -1
         private set
@@ -20,15 +20,16 @@ class TransactionInput private constructor(): MoneroSerializable{
     var keyImage = ByteArray(0)
         private set
         get() = Arrays.copyOf(field, field.size)
+
     override fun toBlob(): ByteArray {
         val b = ByteArrayOutputStream()
         val d = DataOutputStream(b)
         d.write(inputType)
-        when(inputType) {
+        when (inputType) {
             0x02 -> {
                 d.writeVarLong(amount.atomicUnits)
                 d.writeVarInt(keyOffsets.size)
-                for(l in keyOffsets){
+                for (l in keyOffsets) {
                     d.writeVarLong(l)
                 }
                 d.write(keyImage)
@@ -40,6 +41,7 @@ class TransactionInput private constructor(): MoneroSerializable{
         }
         return b.toByteArray()
     }
+
     companion object {
         fun parseFromBlob(bb: ByteBuffer): TransactionInput {
             val ret = TransactionInput()
@@ -50,7 +52,7 @@ class TransactionInput private constructor(): MoneroSerializable{
                         amount = XMRAmount(bb.getVarLong())
                         val numKOffsets = bb.getVarInt()
                         val tkeyOffsets = ArrayList<Long>()
-                        for(i in 0 until numKOffsets){
+                        for (i in 0 until numKOffsets) {
                             tkeyOffsets.add(bb.getVarLong())
                         }
                         keyOffsets = tkeyOffsets

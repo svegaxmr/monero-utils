@@ -10,9 +10,10 @@ import java.nio.ByteBuffer
 import java.util.*
 import kotlin.collections.ArrayList
 
-private val logger = KotlinLogging.logger {  }
+private val logger = KotlinLogging.logger { }
+
 @ExperimentalUnsignedTypes
-class TransactionPrefix private constructor(): MoneroSerializable {
+class TransactionPrefix private constructor() : MoneroSerializable {
     var ver = -1
         private set
     var ulTime = -1L
@@ -48,33 +49,34 @@ class TransactionPrefix private constructor(): MoneroSerializable {
         d.writeVarInt(ver)
         d.writeVarLong(ulTime)
         d.writeVarInt(numIns)
-        for(i in ins){
+        for (i in ins) {
             d.write(i.toBlob())
         }
         d.writeVarInt(numOuts)
-        for(i in outs){
+        for (i in outs) {
             d.write(i.toBlob())
         }
         d.writeVarInt(extra.size)
         d.write(extra)
         return b.toByteArray()
     }
+
     @ExperimentalUnsignedTypes
     companion object {
         fun parseFromBlob(bb: ByteBuffer): TransactionPrefix {
             val ret = TransactionPrefix()
-            with(ret){
+            with(ret) {
                 ver = bb.getVarInt()
                 ulTime = bb.getVarLong()
                 numIns = bb.getVarInt()
                 val tins = ArrayList<TransactionInput>()
-                for(i in 0 until numIns){
+                for (i in 0 until numIns) {
                     tins.add(TransactionInput.parseFromBlob(bb))
                 }
                 ins = tins
                 numOuts = bb.getVarInt()
                 val touts = ArrayList<TransactionOutput>()
-                for(i in 0 until numOuts){
+                for (i in 0 until numOuts) {
                     touts.add(TransactionOutput.parseFromBlob(bb))
                 }
                 outs = touts
@@ -101,11 +103,11 @@ class TransactionPrefix private constructor(): MoneroSerializable {
                             }
                             2 -> { //nonce
                                 val bb3 = bb2.readNewBuffer()
-                                if((bb3.remaining() != 9) and (bb3.remaining() != 33)){
+                                if ((bb3.remaining() != 9) and (bb3.remaining() != 33)) {
                                     val tmp = ByteArray(bb3.remaining())
                                     bb3.get(tmp)
                                     nonce = tmp
-                                }else{
+                                } else {
                                     val nxt = bb3.get().toInt()
                                     val encrypted = nxt == 1
                                     val pid = ByteArray(if (encrypted) 8 else 32)

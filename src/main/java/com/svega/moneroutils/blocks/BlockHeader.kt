@@ -8,12 +8,13 @@ import java.nio.ByteBuffer
 import java.util.*
 
 @ExperimentalUnsignedTypes
-open class BlockHeader: MoneroSerializable{
+open class BlockHeader : MoneroSerializable {
     var major = -1
     var minor = -1
     var timestamp = Date(0)
     var lastHash = ByteArray(32)
     var nonce = 0L
+
     companion object {
         fun parseBlockBlobHeader(buffer: ByteBuffer): BlockHeader {
             val blockHeader = BlockHeader()
@@ -29,7 +30,7 @@ open class BlockHeader: MoneroSerializable{
         }
     }
 
-    override fun toBlob(): ByteArray{
+    override fun toBlob(): ByteArray {
         val b = ByteArrayOutputStream()
         val d = DataOutputStream(b)
         d.writeVarInt(major)
