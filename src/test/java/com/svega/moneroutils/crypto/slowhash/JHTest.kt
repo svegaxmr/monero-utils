@@ -18,7 +18,7 @@ class JHTest {
             val data = BinHexUtils.hexToByteArray(spl[1]).toUByteArray()
             val don = Scratchpad.getScratchpad(data.size)
             don[0] = data
-            JH.jh256Hash(out.getPointer(0), don.getPointer(0), data.size)
+            JH.jh256Hash(out.getPointer(0), don.getPointer(0), data.size.toULong())
             val get = BinHexUtils.binaryToHex(out[0, out.size].toByteArray())
             assertTrue("${spl[1]} fails: expect ${spl[0]}, get $get", get.equals(spl[0], ignoreCase = true))
         }
