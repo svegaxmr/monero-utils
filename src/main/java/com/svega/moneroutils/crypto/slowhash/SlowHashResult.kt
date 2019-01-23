@@ -1,7 +1,7 @@
 package com.svega.moneroutils.crypto.slowhash
 
 import com.svega.moneroutils.blocks.Block
-import com.svega.moneroutils.getSwappedULong
+import java.math.BigInteger
 
 @ExperimentalUnsignedTypes
 data class SlowHashResult(
@@ -9,5 +9,8 @@ data class SlowHashResult(
         val nonce: Long,
         val hash: UByteArray
 ) {
-    val diff: Long = (0xFFFFFFFFFFFFFFFFUL / hash.getSwappedULong(3)).toLong()
+    val diff: Long = (top / BigInteger(hash.asByteArray().reversedArray())).toLong()
+    companion object {
+        private val top = BigInteger("2").pow(256).dec()
+    }
 }

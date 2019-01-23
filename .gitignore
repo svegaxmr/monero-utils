@@ -29,3 +29,4 @@ temp.txt
 target/
 .idea/uiDesigner.xml
 out.json
+.idea/dictionaries/*
