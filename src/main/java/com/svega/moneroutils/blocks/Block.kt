@@ -139,13 +139,8 @@ open class Block : MoneroSerializable {
         }
 
         fun getTXTreeHash(b: Block): ByteArray {
-            val txIDs = Array(1 + b.txids.size) { ByteArray(32) }
-            var place = 0
-            val h = ByteArray(32)
-            Transaction.getTXHash(b.coinbase, h)
-            txIDs[place++] = h
-            for (t in b.txids)
-                txIDs[place++] = t
+            val txIDs = Array(1 + b.txids.size) { if(it == 0) ByteArray(32) else b.txids[it - 1]}
+            Transaction.getTXHash(b.coinbase, txIDs[0])
             return getTXTreeHash(txIDs)
         }
 
