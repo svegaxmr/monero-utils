@@ -81,32 +81,29 @@ object OAES {
     }
 
     private fun oaesKeyExpand(data: UByteArray): UBytePointer {
-        val keyBase = data.size / OAES_RKEY_LEN
-        val numKeys = keyBase + OAES_ROUND_BASE
-
-        val sp = UByteArray(numKeys * OAES_RKEY_LEN * OAES_COL_LEN)
+        val sp = UByteArray(240)
 
         data.copyInto(sp)
 
         val temp = UByteArray(OAES_COL_LEN)
-        for (_i in keyBase until numKeys * OAES_RKEY_LEN) {
+        for (_i in 8 until 60) {
             sp.copyInto(temp, 0, (_i - 1) * OAES_RKEY_LEN, ((_i - 1) * OAES_RKEY_LEN) + OAES_COL_LEN)
 
-            if (0 == (_i % keyBase)) {
+            if (0 == (_i % 8)) {
                 oaesWordRotLeft(temp)
 
                 for (_j in 0 until OAES_COL_LEN)
                     oaesSubByte(temp, _j)
 
-                temp[0] = temp[0] xor oaesGF8[_i / keyBase - 1]
-            } else if (keyBase > 6 && 4 == _i % keyBase) {
+                temp[0] = temp[0] xor oaesGF8[_i / 8 - 1]
+            } else if (4 == _i % 8) {
                 for (_j in 0 until OAES_COL_LEN)
                     oaesSubByte(temp, _j)
             }
 
             for (_j in 0 until OAES_COL_LEN) {
                 sp[_i * OAES_RKEY_LEN + _j] =
-                        sp[(_i - keyBase) *
+                        sp[(_i - 8) *
                                 OAES_RKEY_LEN + _j] xor temp[_j]
             }
         }
