@@ -56,9 +56,9 @@ data class FullKey(val spend: KeyPair, val view: KeyPair) : Serializable {
         return Base58.encode(toHash + BinHexUtils.binaryToHex(csum))
     }
 
-    fun getAddressBytes(addressType: AddressType, netType: NetType): ByteArray {
+    fun getAddressBytes(addressType: AddressType, netType: NetType): UByteArray {
         val toHash = "${netType.getPrefixStr(addressType)}${spend.public.str}${view.public.str}"
         val csum = Keccak.fullChecksum(BinHexUtils.hexToUByteArray(toHash))
-        return BinHexUtils.hexToByteArray(toHash) + csum.asByteArray()
+        return BinHexUtils.hexToUByteArray(toHash) concat csum
     }
 }

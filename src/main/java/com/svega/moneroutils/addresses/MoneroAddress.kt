@@ -83,7 +83,7 @@ abstract class MoneroAddress : Serializable {
         val view = generateKeys(second) //spend is got from generatekeys
         key = FullKey(spend, view)
         address = key.getAddressString(addrType, net)
-        bytes = key.getAddressBytes(addrType, net).asUByteArray()
+        bytes = key.getAddressBytes(addrType, net)
     }
 
     protected constructor(key: FullKey, net: NetType, addrType: AddressType) {
@@ -91,7 +91,7 @@ abstract class MoneroAddress : Serializable {
         this.netType = net
         seed = null
         address = key.getAddressString(addrType, net)
-        bytes = key.getAddressBytes(addrType, net).asUByteArray()
+        bytes = key.getAddressBytes(addrType, net)
     }
 
     protected open fun validate() {
