@@ -168,14 +168,14 @@ object SlowHash {
             if (variant >= 2) {
                 cl[0] = cl[0] xor divisionResult xor (sqrtResult shl 32)
                 val dividend = c1l[1]
-                val divisor = ((c1l[0] + (sqrtResult shl 1).toUInt()) or 0x80000001U).toUInt()
-                divisionResult = ((dividend / divisor).toUInt()) + (((dividend % divisor).toULong()) shl 32)
+                val divisor = ((c1l[0] + (sqrtResult shl 1)) or 0x80000001U) and 0xFFFFFFFFu
+                divisionResult = ((dividend / divisor) and 0xFFFFFFFFu) + ((dividend % divisor) shl 32)
                 val sqrtInput = c1l[0] + divisionResult
                 sqrtResult = (Math.sqrt(sqrtInput.toDouble() + 18446744073709551616.0) * 2.0 - 8589934592.0).toLong().toULong()
                 val s = sqrtResult shr 1
                 val b1 = sqrtResult and 1u
                 val r2 = s * (s + b1) + (sqrtResult shl 32)
-                sqrtResult += (if (r2 + (1UL shl 32) < sqrtInput - s) 1u else 0u) - (if (r2 + b1 > sqrtInput) 1u else 0u)
+                sqrtResult += (if (r2 + 0x100000000uL < sqrtInput - s) 1u else 0u) - (if (r2 + b1 > sqrtInput) 1u else 0u)
             }
         }
 

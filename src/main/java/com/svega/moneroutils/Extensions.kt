@@ -206,7 +206,7 @@ fun Int.toByteArray(): ByteArray {
 
 @ExperimentalUnsignedTypes
 fun ULong.toDouble(): Double{
-    return (this and (1uL shl 63).inv()).toLong().toDouble() + if((this and (1uL shl 63)) != 0uL) 9223372036854775808.0 else 0.0
+    return (this and 0x7FFFFFFFFFFFFFFFuL).toLong().toDouble() + (9223372036854775808.0 * (this shr 63).toInt())
 }
 
 @ExperimentalUnsignedTypes
